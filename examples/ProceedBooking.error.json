@@ -1,0 +1,12 @@
+{
+  "retCode": 0,
+  "infoMsg": null,
+  "errorMessage": null,
+  "displayMessage": null,
+  "serverStackTrace": null,
+  "data": {
+    "suggestedTeeTimeIDs": null,
+    "suggestedTeeTimes": null,
+    "message": "The Tee Time you have selected is currently locked by another user.<br/>"
+  }
+}

@@ -1,0 +1,96 @@
+{
+    "retCode": 0,
+    "infoMsg": null,
+    "errorMessage": null,
+    "displayMessage": null,
+    "serverStackTrace": null,
+    "data": {
+      "bookingId": 0,
+      "bookingType": "TeeTimeBooking",
+      "bookingTimeType": 0,
+      "dateText": "Wed 07 Nov 2018 00:00:00 UTC-0000",
+      "date": "11-07-2018",
+      "time": "08:40:00",
+      "groupBookingId": null,
+      "isOwner": true,
+      "earliestSelectedTime": "00:00:00",
+      "latestSelectedTime": "00:00:00",
+      "players": [
+        {
+          "playerType": 1,
+          "playerTypeTxt": "Available",
+          "playerLabel": "Available"
+        },
+        {
+          "playerType": 1,
+          "playerTypeTxt": "Available",
+          "playerLabel": "Available"
+        },
+        {
+          "playerType": 1,
+          "playerTypeTxt": "Available",
+          "playerLabel": "Available"
+        },
+        {
+          "playerType": 1,
+          "playerTypeTxt": "Available",
+          "playerLabel": "Available"
+        }
+      ],
+      "memberExclusionList": null,
+      "totalExclusionCounter": 0,
+      "currentSlots": [],
+      "teeSheetFirstTime": "08:00:00",
+      "teeSheetLastTime": "16:00:00",
+      "allowTBDs": false,
+      "allowGuests": true,
+      "nineAllowed": true,
+      "eighteenAllowed": true,
+      "numberOfHoles": 0,
+      "confirmationNumber": null,
+      "course": "Fairways",
+      "courseId": 118,
+      "isWaitingList": null,
+      "playersAllowedAdd": 0,
+      "playersAllowedAddTxt": "NoMembers",
+      "allowedMaxPlayers": 4,
+      "canEdit": true,
+      "canAdd": true,
+      "startingHole": "1",
+      "notes": null,
+      "primaryPlayer": "Boulia, Donald",
+      "primaryPlayerId": 593198,
+      "teesheetTimeId": 82454265,
+      "teeSheetBank": {
+        "bankId": 1261419,
+        "bankNumber": 1,
+        "numberOfHoles": 18,
+        "teeSheetKey": {
+          "course": "Fairways",
+          "courseId": 118,
+          "dateOfAvailability": "2018-10-24T07:00:00",
+          "dateOfAvailabilityJS": "Wed 24 Oct 2018 07:00:00 UTC-0000",
+          "dateNoLongerAvailable": null,
+          "dateNoLongerAvailableJS": null,
+          "maxPlayers": 4,
+          "tbdExpiration": null
+        }
+      },
+      "reservations": [
+        {
+          "reservationId": 0,
+          "resType": "TeeTimeReservationMember",
+          "memberNumber": "B267",
+          "memberId": 593198,
+          "caddyRequested": false,
+          "transport": "Cart",
+          "fullName": "Donald Boulia",
+          "firstName": "Donald",
+          "lastName": "Boulia",
+          "clubsType": null,
+          "clubsTypeNum": null
+        }
+      ],
+      "tbdeXpirationMsg": ""
+    }
+  }

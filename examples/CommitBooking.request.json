@@ -1,0 +1,30 @@
+{
+  "Mode": "Booking",
+  "BookingId": 0,
+  "OwnerId": 596924,
+  "Reservations": [{
+    "ReservationId": 0,
+    "ReservationType": 0,
+    "FullName": "Kirsten Boulia",
+    "Transport": "2",
+    "Caddy": "false",
+    "Rentals": "",
+    "MemberId": 596924
+  }, {
+    "ReservationId": 0,
+    "ReservationType": 0,
+    "FullName": "Donald Boulia",
+    "Transport": "2",
+    "Caddy": "false",
+    "Rentals": "",
+    "MemberId": 593198
+  }],
+  "Holes": 18,
+  "StartingHole": "1",
+  "wait": false,
+  "Allowed": null,
+  "enabled": true,
+  "startTime": null,
+  "endTime": null,
+  "Notes": ""
+}

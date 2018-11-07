@@ -1,0 +1,227 @@
+{
+  "retCode": 0,
+  "infoMsg": null,
+  "errorMessage": null,
+  "displayMessage": null,
+  "serverStackTrace": null,
+  "data": {
+    "currentSelectedIndex": 4,
+    "entries": [
+      {
+        "teeSheetTimeId": 82454261,
+        "time": "8:00 AM",
+        "availPlayers": 1
+      },
+      {
+        "teeSheetTimeId": 82454262,
+        "time": "8:10 AM",
+        "availPlayers": 2
+      },
+      {
+        "teeSheetTimeId": 82454263,
+        "time": "8:20 AM",
+        "availPlayers": 1
+      },
+      {
+        "teeSheetTimeId": 82454264,
+        "time": "8:30 AM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454265,
+        "time": "8:40 AM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454266,
+        "time": "8:50 AM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454267,
+        "time": "9:00 AM",
+        "availPlayers": 1
+      },
+      {
+        "teeSheetTimeId": 82454268,
+        "time": "9:10 AM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454269,
+        "time": "9:20 AM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454270,
+        "time": "9:30 AM",
+        "availPlayers": 3
+      },
+      {
+        "teeSheetTimeId": 82454272,
+        "time": "9:50 AM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454273,
+        "time": "10:00 AM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454274,
+        "time": "10:10 AM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454275,
+        "time": "10:20 AM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454276,
+        "time": "10:30 AM",
+        "availPlayers": 2
+      },
+      {
+        "teeSheetTimeId": 82454277,
+        "time": "10:40 AM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454278,
+        "time": "10:50 AM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454279,
+        "time": "11:00 AM",
+        "availPlayers": 3
+      },
+      {
+        "teeSheetTimeId": 82454281,
+        "time": "11:20 AM",
+        "availPlayers": 3
+      },
+      {
+        "teeSheetTimeId": 82454286,
+        "time": "12:10 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454287,
+        "time": "12:20 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454288,
+        "time": "12:30 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454289,
+        "time": "12:40 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454290,
+        "time": "12:50 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454291,
+        "time": "1:00 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454292,
+        "time": "1:10 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454293,
+        "time": "1:20 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454294,
+        "time": "1:30 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454295,
+        "time": "1:40 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454296,
+        "time": "1:50 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454297,
+        "time": "2:00 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454298,
+        "time": "2:10 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454299,
+        "time": "2:20 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454300,
+        "time": "2:30 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454301,
+        "time": "2:40 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454302,
+        "time": "2:50 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454303,
+        "time": "3:00 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454304,
+        "time": "3:10 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454305,
+        "time": "3:20 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454306,
+        "time": "3:30 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454307,
+        "time": "3:40 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454308,
+        "time": "3:50 PM",
+        "availPlayers": 4
+      },
+      {
+        "teeSheetTimeId": 82454309,
+        "time": "4:00 PM",
+        "availPlayers": 4
+      }
+    ]
+  }
+}
