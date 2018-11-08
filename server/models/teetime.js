@@ -138,7 +138,7 @@ module.exports = function (TeeTime) {
         // results of tee time search
 
         if (result) {
-          const slots = result.toArray();          
+          const slots = result.toArray();
           console.log("result: " + JSON.stringify(slots));
 
           cb(null, slots);
@@ -147,7 +147,7 @@ module.exports = function (TeeTime) {
         }
 
       }, function (err) {
-        cb(err);
+        cb(new Error(err));
       });
   };
 
@@ -162,7 +162,7 @@ module.exports = function (TeeTime) {
       .then(function (result) {
 
         if (result) {
-          if (courses.length>3) {
+          if (courses.length > 3) {
             console.log("Warning: max of three players allowed on a tee time");
           }
 
@@ -180,13 +180,23 @@ module.exports = function (TeeTime) {
         if (result) {
           console.log("result: " + JSON.stringify(result));
 
-          cb(null, result);
+          // return the tee time we received
+          const time = result.data.time + " " + result.data.date + " " + result.data.teeSheetBank.teeSheetKey.course;
+
+          cb(null, {
+            "time": time
+          });
         } else {
           cb("Reservation failed!");
         }
 
       }, function (err) {
-        cb(err);
+        console.log("TeeTime.reserve error: " + err);
+
+        const customErr = new Error(err);
+        customErr.status = 400;
+
+        cb(customErr);
       });
   };
 };

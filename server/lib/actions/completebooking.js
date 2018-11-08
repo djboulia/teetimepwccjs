@@ -54,7 +54,10 @@ var CompleteBooking = function (session) {
         .then(function (json) {
 
           if (!json || !json.data) {
-            reject("Error calling CommitBooking");
+            const msg = (json && json.errorMessage) ?
+              json.errorMessage : "Error calling CommitBooking";
+
+            reject(msg);
           } else if (json.data && json.data.players) {
             // got the lock, return the result
             resolve(json.data);

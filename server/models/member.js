@@ -120,7 +120,7 @@ module.exports = function (Member) {
 
         cb(null, result);
       }, function (err) {
-        cb(err);
+        cb(new Error(err));
       })
   };
 
@@ -149,11 +149,11 @@ module.exports = function (Member) {
         if (result) {
           cb(null, result);
         } else {
-          cb("Login failed!  Check username and password.");
+          cb(new Error("Login failed!  Check username and password."));
         }
 
       }, function (err) {
-        cb(err);
+        cb(new Error(err));
       });
   };
 
@@ -184,11 +184,11 @@ module.exports = function (Member) {
 
           cb(null, result);
         } else {
-          cb("Login failed!  Check username and password.");
+          cb(new Error("Login failed!  Check username and password."));
         }
 
       }, function (err) {
-        cb(err);
+        cb(new Error(err));
       });
   };
 };
