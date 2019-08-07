@@ -13,11 +13,34 @@
       "./mixins"
     ]
   },
-  "member": {
+  "User": {
+    "dataSource": "db",
+    "public": false
+  },
+  "AccessToken": {
+    "dataSource": "db",
+    "public": false
+  },
+  "ACL": {
+    "dataSource": "db",
+    "public": false
+  },
+  "RoleMapping": {
+    "dataSource": "db",
+    "public": false,
+    "options": {
+      "strictObjectIDCoercion": true
+    }
+  },
+  "Role": {
+    "dataSource": "db",
+    "public": false
+  },
+  "Member": {
     "dataSource": null,
     "public": true
   },
-  "teetime": {
+  "TeeTime": {
     "dataSource": null,
     "public": true
   }

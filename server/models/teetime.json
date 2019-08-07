@@ -1,5 +1,6 @@
 {
-  "name": "teetime",
+  "name": "TeeTime",
+  "plural": "TeeTimes",
   "base": "Model",
   "idInjection": true,
   "options": {

@@ -114,7 +114,7 @@ var TeeTimeReserve = function (session) {
           };
 
           // create a chain of promises to try all of the available
-          // tee times in order.  when we're succesful, the remaining 
+          // tee times in order.  when we're successful, the remaining 
           // promises will return immediately 
           const slots = result.toArray();
 
@@ -129,7 +129,17 @@ var TeeTimeReserve = function (session) {
           chain = chain.then(function (result) {
             console.log("chain complete!: " + JSON.stringify(result));
 
-            resolve(result);
+            if (result && result.data && result.complete === true) {
+              const teetime = {
+                time : result.data.time,
+                date : result.data.date,
+                course : result.data.teeSheetBank.teeSheetKey.course
+              };
+
+              resolve(teetime); 
+            } else {
+              reject(result);
+            }
           }, function (err) {
             reject(err);
           });

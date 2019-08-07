@@ -1,5 +1,6 @@
 {
-  "name": "member",
+  "name": "Member",
+  "plural": "Members",
   "base": "Model",
   "idInjection": true,
   "options": {
@@ -11,3 +12,4 @@
   "acls": [],
   "methods": {}
 }
+

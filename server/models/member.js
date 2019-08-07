@@ -8,12 +8,13 @@ var MemberSearch = require('../lib/actions/membersearch.js');
 
 module.exports = function (Member) {
 
-  var site = Config.sitename;
+  const site = Config.sitename;
+  const tokenManager = Config.tokenManager;
 
   Member.remoteMethod(
-    'validLogin', {
+    'login', {
       http: {
-        path: '/validLogin',
+        path: '/login',
         verb: 'post',
       },
       description: 'Validate PWCC member credentials',
@@ -33,10 +34,26 @@ module.exports = function (Member) {
       ],
 
       returns: {
-        arg: 'result',
-        type: 'boolean',
-        root: false
+        arg: 'token',
+        type: 'object',
+        root: true
       }
+    }
+  );
+
+  Member.remoteMethod(
+    'logout', {
+      description: 'Logout of this session with access token.',
+      accepts: [{
+        arg: 'ctx',
+        type: 'string',
+        http: tokenManager.getTokenFromContext,
+        description: 'Do not supply this argument, it is automatically extracted ' +
+          'from request headers.',
+      }],
+      http: {
+        verb: 'all'
+      },
     }
   );
 
@@ -49,18 +66,12 @@ module.exports = function (Member) {
       description: 'Get current member info',
 
       accepts: [{
-          arg: 'username',
-          type: 'string',
-          required: true,
-          description: 'username for PWCC site'
-        },
-        {
-          arg: 'password',
-          type: 'string',
-          required: true,
-          description: 'Password for PWCC site'
-        }
-      ],
+        arg: 'ctx',
+        type: 'string',
+        http: tokenManager.getTokenFromContext,
+        description: 'Do not supply this argument, it is automatically extracted ' +
+          'from request headers.',
+      }],
 
       returns: {
         arg: 'result',
@@ -76,25 +87,20 @@ module.exports = function (Member) {
         path: '/search',
         verb: 'post',
       },
-      description: 'Search for mmebers by last name',
+      description: 'Search for members by last name',
 
       accepts: [{
-          arg: 'username',
-          type: 'string',
-          required: true,
-          description: 'username for PWCC site'
-        },
-        {
-          arg: 'password',
-          type: 'string',
-          required: true,
-          description: 'Password for PWCC site'
-        },
-        {
           arg: 'lastname',
           type: 'string',
           required: true,
           description: 'Member last name to search for'
+        },
+        {
+          arg: 'ctx',
+          type: 'string',
+          http: tokenManager.getTokenFromContext,
+          description: 'Do not supply this argument, it is automatically extracted ' +
+            'from request headers.',
         }
       ],
 
@@ -106,89 +112,92 @@ module.exports = function (Member) {
     }
   );
 
-  Member.validLogin = function (username, password, cb) {
+  Member.login = function (username, password, cb) {
 
-    console.log("member.validLogin");
+    console.log("member.login");
 
-    var session = new Session(site);
-    var login = new Login(session);
+    tokenManager.create(function (token) {
+      var session = new Session(site);
+      var login = new Login(session);
 
-    login.do(username, password)
-      .then(function (result) {
+      login.do(username, password)
+        .then(function (result) {
 
-        // console.log("result: " + result);
+          if (result) {
+            // store this session and return the token
+            // for future calls
+            tokenManager.put(token, session);
+            // console.log("result: " + result);
 
-        cb(null, result);
-      }, function (err) {
-        cb(new Error(err));
-      })
+            cb(null, token);
+          } else {
+            cb(new Error("Login failed!"));
+          }
+
+        }, function (err) {
+          cb(new Error(err));
+        })
+    });
+
+
   };
 
-  Member.info = function (username, password, cb) {
+  Member.logout = function (tokenId, cb) {
+    console.log("member.logout: token = " + tokenId);
 
-    console.log("member.info");
-
-    var session = new Session(site);
-    var login = new Login(session);
-
-    login.do(username, password)
-      .then(function (result) {
-
-        if (result) {
-          var memberInfo = new MemberInfo(session);
-
-          return memberInfo.do();
-        } else {
-          return (null);
-        }
-
-      })
-      .then(function (result) {
-        // memberInfo result
-
-        if (result) {
-          cb(null, result);
-        } else {
-          cb(new Error("Login failed!  Check username and password."));
-        }
-
-      }, function (err) {
-        cb(new Error(err));
-      });
+    // forgetting this token will effectively log us out 
+    if (tokenId && tokenManager.delete(tokenId)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Not logged in!"));
+    }
   };
 
-  Member.search = function (username, password, lastname, cb) {
 
-    console.log("member.search");
+  Member.info = function (tokenId, cb) {
+    console.log("member.info: token = " + tokenId);
 
-    var session = new Session(site);
-    var login = new Login(session);
+    if (tokenManager.isValid(tokenId)) {
+      const session = tokenManager.get(tokenId);
+      const memberInfo = new MemberInfo(session);
 
-    login.do(username, password)
-      .then(function (result) {
+      memberInfo.do()
+        .then(function (result) {
+          if (result) {
+            cb(null, result);
+          } else {
+            cb(new Error("member.info failed!"));
+          }
+        }, function (err) {
+          cb(new Error(err));
+        });
+    } else {
+      cb(new Error("Not logged in!"));
+    }
 
-        if (result) {
-          var memberSearch = new MemberSearch(session);
+  };
 
-          return memberSearch.do(lastname);
-        } else {
-          return (null);
-        }
+  Member.search = function (lastname, tokenId, cb) {
+    console.log("member.search: token = " + tokenId);
 
-      })
-      .then(function (result) {
-        // holds the results of current member search
+    if (tokenManager.isValid(tokenId)) {
+      const session = tokenManager.get(tokenId);
+      var memberSearch = new MemberSearch(session);
 
-        if (result) {
-          console.log("result: " + JSON.stringify(result));
+      memberSearch.do(lastname)
+        .then(function (result) {
+          if (result) {
+            console.log("result: " + JSON.stringify(result));
 
-          cb(null, result);
-        } else {
-          cb(new Error("Login failed!  Check username and password."));
-        }
-
-      }, function (err) {
-        cb(new Error(err));
-      });
+            cb(null, result);
+          } else {
+            cb(new Error("member.search failed!"));
+          }
+        }, function (err) {
+          cb(new Error(err));
+        });
+    } else {
+      cb(new Error("Not logged in!"));
+    }
   };
 };

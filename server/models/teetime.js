@@ -9,6 +9,7 @@ var TeeTimeReserve = require('../lib/actions/teetimereserve.js');
 module.exports = function (TeeTime) {
 
   const site = Config.sitename;
+  const tokenManager = Config.tokenManager;
 
   TeeTime.remoteMethod(
     'search', {
@@ -20,18 +21,6 @@ module.exports = function (TeeTime) {
       description: 'Search for available tee times',
 
       accepts: [{
-          arg: 'username',
-          type: 'string',
-          required: true,
-          description: 'username for PWCC site'
-        },
-        {
-          arg: 'password',
-          type: 'string',
-          required: true,
-          description: 'Password for PWCC site'
-        },
-        {
           arg: 'time',
           type: 'string',
           required: true,
@@ -48,6 +37,13 @@ module.exports = function (TeeTime) {
           type: 'array',
           required: true,
           description: 'Ordered array of course preferences'
+        },
+        {
+          arg: 'ctx',
+          type: 'string',
+          http: tokenManager.getTokenFromContext,
+          description: 'Do not supply this argument, it is automatically extracted ' +
+            'from request headers.',
         }
       ],
 
@@ -70,18 +66,6 @@ module.exports = function (TeeTime) {
       description: 'Book a tee time',
 
       accepts: [{
-          arg: 'username',
-          type: 'string',
-          required: true,
-          description: 'username for PWCC site'
-        },
-        {
-          arg: 'password',
-          type: 'string',
-          required: true,
-          description: 'Password for PWCC site'
-        },
-        {
           arg: 'time',
           type: 'string',
           required: true,
@@ -104,6 +88,13 @@ module.exports = function (TeeTime) {
           type: 'array',
           required: true,
           description: 'List of additional playing partners (max 3)'
+        },
+        {
+          arg: 'ctx',
+          type: 'string',
+          http: tokenManager.getTokenFromContext,
+          description: 'Do not supply this argument, it is automatically extracted ' +
+            'from request headers.',
         }
       ],
 
@@ -115,88 +106,55 @@ module.exports = function (TeeTime) {
     }
   );
 
-  TeeTime.search = function (username, password, time, date, courses, cb) {
+  TeeTime.search = function (time, date, courses, tokenId, cb) {
 
-    console.log("teetime.search");
+    console.log("teetime.search tokenId = " + tokenId);
 
-    const session = new Session(site);
-    const login = new Login(session);
+    if (tokenManager.isValid(tokenId)) {
+      const session = tokenManager.get(tokenId);
+      const teeTimeSearch = new TeeTimeSearch(session);
 
-    login.do(username, password)
-      .then(function (result) {
+      teeTimeSearch.do(time, date, courses)
+        .then(function (result) {
+          if (result) {
+            const slots = result.toArray();
+            console.log("result: " + JSON.stringify(slots));
 
-        if (result) {
-          const teeTimeSearch = new TeeTimeSearch(session);
+            cb(null, slots);
+          } else {
+            cb(new Error("teetime.search failed!"));
+          }
+        }, function (err) {
+          cb(new Error(err));
+        });
+    } else {
+      cb(new Error("Not logged in!"));
+    }
 
-          return teeTimeSearch.do(time, date, courses);
-        } else {
-          return (null);
-        }
-
-      })
-      .then(function (result) {
-        // results of tee time search
-
-        if (result) {
-          const slots = result.toArray();
-          console.log("result: " + JSON.stringify(slots));
-
-          cb(null, slots);
-        } else {
-          cb("Login failed!  Check username and password.");
-        }
-
-      }, function (err) {
-        cb(new Error(err));
-      });
   };
 
-  TeeTime.reserve = function (username, password, time, date, courses, players, cb) {
+  TeeTime.reserve = function (time, date, courses, players, tokenId, cb) {
 
-    console.log("teetime.reserve");
+    console.log("teetime.reserve tokenId = " + tokenId);
 
-    const session = new Session(site);
-    const login = new Login(session);
+    if (tokenManager.isValid(tokenId)) {
+      const session = tokenManager.get(tokenId);
+      const teeTimeReserve = new TeeTimeReserve(session);
 
-    login.do(username, password)
-      .then(function (result) {
+      teeTimeReserve.do(time, date, courses, players)
+        .then(function (result) {
+          if (result) {
+            console.log("result: " + JSON.stringify(result));
 
-        if (result) {
-          if (courses.length > 3) {
-            console.log("Warning: max of three players allowed on a tee time");
+            cb(null, result);
+          } else {
+            cb(new Error("Reservation failed!"));
           }
-
-          const teeTimeReserve = new TeeTimeReserve(session);
-
-          return teeTimeReserve.do(time, date, courses, players);
-        } else {
-          return Promise.reject("Login failed! Check username and password.");
-        }
-
-      })
-      .then(function (result) {
-        // results of tee time booking
-
-        if (result) {
-          console.log("result: " + JSON.stringify(result));
-
-          // return the tee time we received
-          const time = result.data.time + " " + result.data.date + " " + result.data.teeSheetBank.teeSheetKey.course;
-
-          cb(null, {
-            "time": time
-          });
-        } else {
-          cb("Reservation failed!");
-        }
-
-      }, function (err) {
-        console.log("TeeTime.reserve error: " + err);
-
-        const customErr = new Error(err);
-        customErr.status = 400;
-
-        cb(customErr);
-      });
+        }, function (err) {
+          cb(new Error(err));
+        });
+    } else {
+      cb(new Error("Not logged in!"));
+    }
   };
 };
