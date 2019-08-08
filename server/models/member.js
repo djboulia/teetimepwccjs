@@ -9,7 +9,7 @@ var MemberSearch = require('../lib/actions/membersearch.js');
 module.exports = function (Member) {
 
   const site = Config.sitename;
-  const tokenManager = Config.tokenManager;
+  const sessionManager = Config.sessionManager;
 
   Member.remoteMethod(
     'login', {
@@ -47,7 +47,7 @@ module.exports = function (Member) {
       accepts: [{
         arg: 'ctx',
         type: 'string',
-        http: tokenManager.getTokenFromContext,
+        http: sessionManager.getTokenFromContext,
         description: 'Do not supply this argument, it is automatically extracted ' +
           'from request headers.',
       }],
@@ -68,7 +68,7 @@ module.exports = function (Member) {
       accepts: [{
         arg: 'ctx',
         type: 'string',
-        http: tokenManager.getTokenFromContext,
+        http: sessionManager.getTokenFromContext,
         description: 'Do not supply this argument, it is automatically extracted ' +
           'from request headers.',
       }],
@@ -98,7 +98,7 @@ module.exports = function (Member) {
         {
           arg: 'ctx',
           type: 'string',
-          http: tokenManager.getTokenFromContext,
+          http: sessionManager.getTokenFromContext,
           description: 'Do not supply this argument, it is automatically extracted ' +
             'from request headers.',
         }
@@ -116,7 +116,7 @@ module.exports = function (Member) {
 
     console.log("member.login");
 
-    tokenManager.create(function (token) {
+    sessionManager.create(username, function (token) {
       var session = new Session(site);
       var login = new Login(session);
 
@@ -126,10 +126,10 @@ module.exports = function (Member) {
           if (result) {
             // store this session and return the token
             // for future calls
-            tokenManager.put(token, session);
+            sessionManager.put(token, session);
             // console.log("result: " + result);
 
-            cb(null, token);
+            cb(null, sessionManager.toObject(token));
           } else {
             cb(new Error("Login failed!"));
           }
@@ -146,8 +146,8 @@ module.exports = function (Member) {
     console.log("member.logout: token = " + tokenId);
 
     // forgetting this token will effectively log us out 
-    if (tokenId && tokenManager.delete(tokenId)) {
-      cb(null, true);
+    if (tokenId && sessionManager.delete(tokenId)) {
+      cb(null, { result: true });
     } else {
       cb(new Error("Not logged in!"));
     }
@@ -157,8 +157,8 @@ module.exports = function (Member) {
   Member.info = function (tokenId, cb) {
     console.log("member.info: token = " + tokenId);
 
-    if (tokenManager.isValid(tokenId)) {
-      const session = tokenManager.get(tokenId);
+    if (sessionManager.isValid(tokenId)) {
+      const session = sessionManager.get(tokenId);
       const memberInfo = new MemberInfo(session);
 
       memberInfo.do()
@@ -180,8 +180,8 @@ module.exports = function (Member) {
   Member.search = function (lastname, tokenId, cb) {
     console.log("member.search: token = " + tokenId);
 
-    if (tokenManager.isValid(tokenId)) {
-      const session = tokenManager.get(tokenId);
+    if (sessionManager.isValid(tokenId)) {
+      const session = sessionManager.get(tokenId);
       var memberSearch = new MemberSearch(session);
 
       memberSearch.do(lastname)

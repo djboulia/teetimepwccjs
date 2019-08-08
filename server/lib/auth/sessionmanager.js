@@ -18,7 +18,7 @@ var createTokenId = function (fn) {
 
   AccessToken.createAccessTokenId(function (err, guid) {
     if (err) {
-      console.log("TokenManager: error generated TokenId");
+      console.log("SessionManager: error generated TokenId");
       fn(undefined);
     } else {
       fn(guid);
@@ -41,7 +41,7 @@ var getTokenFromRequest = function (req) {
 
 
 module.exports = function (ttl) { // time to live (in secs)
-  var TokenManager = this;
+  var SessionManager = this;
 
   var tokens = {};
 
@@ -51,7 +51,7 @@ module.exports = function (ttl) { // time to live (in secs)
    * @param {Context} ctx HTTP request object
    * @return {String} token or undefined if not found
    */
-  TokenManager.getTokenFromContext = function (ctx) {
+  SessionManager.getTokenFromContext = function (ctx) {
     const req = ctx && ctx.req;
 
     const token = getTokenFromRequest(req);
@@ -63,13 +63,15 @@ module.exports = function (ttl) { // time to live (in secs)
   /**
    * creates a new token
    * 
+   * @param {String} username the user we're creating this token for
    * @param {Function} fn will return the newly created token
    */
-  TokenManager.create = function (fn) {
+  SessionManager.create = function (username, fn) {
     createTokenId(function (token) {
       if (token) {
         var tokenData = {
           timestamp: Date.now(),
+          username: username,
           data: undefined
         }
 
@@ -81,14 +83,14 @@ module.exports = function (ttl) { // time to live (in secs)
 
   };
 
-  TokenManager.isValid = function (token) {
-    var result = false;
+  SessionManager.isValid = function (token) {
+    let result = false;
     const tokenData = tokens[token];
 
     if (tokenData) {
       if (Date.now() > tokenData.timestamp + (ttl * 1000)) {
         // expired token, remove this entry and return no data
-        console.log("TokenManager: removing expired token " + token);
+        console.log("SessionManager: removing expired token " + token);
         tokens[token] = undefined;
       } else {
         result = true;
@@ -99,15 +101,37 @@ module.exports = function (ttl) { // time to live (in secs)
   };
 
   /**
+   * return an object representing the elements of this token
+   * @param [String} token to search for
+   * @return {Object} an object describing this token's characteristics or undefined
+   */
+  SessionManager.toObject = function(token) {
+    let tokenObj = undefined;
+
+    if (SessionManager.isValid(token)) {
+      const tokenData = tokens[token];
+
+      tokenObj = {
+        id : token,
+        ttl : ttl * 1000,  // return in millisecs
+        created : new Date(tokenData.timestamp).toISOString(),
+        userId : tokenData.username
+      };
+    }
+
+    return tokenObj;
+  };
+
+  /**
    * retrieve the data stored at this token
    * @param [String} token to search for
    * @return {Object} data or undefined if token is expired/not found
    */
-  TokenManager.get = function (token) {
-    var tokenData = tokens[token];
-    var data = undefined;
+  SessionManager.get = function (token) {
+    const tokenData = tokens[token];
+    let data = undefined;
 
-    if (TokenManager.isValid(token)) {
+    if (SessionManager.isValid(token)) {
       data = tokenData.data;
     }
 
@@ -121,14 +145,14 @@ module.exports = function (ttl) { // time to live (in secs)
    * @param [Object} data to store for this token
    * @return {Object} data or undefined if token is expired/not found
    */
-  TokenManager.put = function (token, data) {
+  SessionManager.put = function (token, data) {
 
-    var tokenData = tokens[token];
+    const tokenData = tokens[token];
 
     if (tokenData) {
       tokenData.data = data;
     } else {
-      console.log("Error: TokenManger.put - token not found!");
+      console.log("Error: SessionManager.put - token not found!");
     }
 
     return tokenData != undefined;
@@ -138,15 +162,15 @@ module.exports = function (ttl) { // time to live (in secs)
    * remove this token from the token manager
    * @param [String} token to remove
    */
-  TokenManager.delete = function (token) {
+  SessionManager.delete = function (token) {
 
-    if (TokenManager.isValid(token)) {
+    if (SessionManager.isValid(token)) {
       // remove this token from our chain
       tokens[token] = undefined;
 
       return true;
     } else {
-      console.log("Error: TokenManger.delete - invalid token!");
+      console.log("Error: SessionManager.delete - invalid token!");
 
       return false;
     }

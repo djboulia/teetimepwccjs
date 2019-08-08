@@ -8,8 +8,7 @@ var TeeTimeReserve = require('../lib/actions/teetimereserve.js');
 
 module.exports = function (TeeTime) {
 
-  const site = Config.sitename;
-  const tokenManager = Config.tokenManager;
+  const sessionManager = Config.sessionManager;
 
   TeeTime.remoteMethod(
     'search', {
@@ -41,7 +40,7 @@ module.exports = function (TeeTime) {
         {
           arg: 'ctx',
           type: 'string',
-          http: tokenManager.getTokenFromContext,
+          http: sessionManager.getTokenFromContext,
           description: 'Do not supply this argument, it is automatically extracted ' +
             'from request headers.',
         }
@@ -92,7 +91,7 @@ module.exports = function (TeeTime) {
         {
           arg: 'ctx',
           type: 'string',
-          http: tokenManager.getTokenFromContext,
+          http: sessionManager.getTokenFromContext,
           description: 'Do not supply this argument, it is automatically extracted ' +
             'from request headers.',
         }
@@ -110,8 +109,8 @@ module.exports = function (TeeTime) {
 
     console.log("teetime.search tokenId = " + tokenId);
 
-    if (tokenManager.isValid(tokenId)) {
-      const session = tokenManager.get(tokenId);
+    if (sessionManager.isValid(tokenId)) {
+      const session = sessionManager.get(tokenId);
       const teeTimeSearch = new TeeTimeSearch(session);
 
       teeTimeSearch.do(time, date, courses)
@@ -137,8 +136,8 @@ module.exports = function (TeeTime) {
 
     console.log("teetime.reserve tokenId = " + tokenId);
 
-    if (tokenManager.isValid(tokenId)) {
-      const session = tokenManager.get(tokenId);
+    if (sessionManager.isValid(tokenId)) {
+      const session = sessionManager.get(tokenId);
       const teeTimeReserve = new TeeTimeReserve(session);
 
       teeTimeReserve.do(time, date, courses, players)

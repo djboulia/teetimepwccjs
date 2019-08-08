@@ -1,6 +1,6 @@
 // keep app config in loopback's config.json file
 var app = require('../server');
-var TokenManager = require('../lib/auth/tokenmanager.js');
+var SessionManager = require('../lib/auth/sessionmanager.js');
 
 var Config = {
    // the name of the web site which hosts the tee time system
@@ -9,7 +9,7 @@ var Config = {
   // fail in interesting ways
   sitename: app.get('appconfig').sitename,
   
-  tokenManager: new TokenManager(60 * 60) // 1 hour ttl
+  sessionManager: new SessionManager(60 * 60) // 1 hour ttl
 };
 
 module.exports = Config;
