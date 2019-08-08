@@ -41,7 +41,6 @@ var getTokenFromRequest = function (req) {
 
 
 module.exports = function (ttl) { // time to live (in secs)
-  var SessionManager = this;
 
   var tokens = {};
 
@@ -51,7 +50,7 @@ module.exports = function (ttl) { // time to live (in secs)
    * @param {Context} ctx HTTP request object
    * @return {String} token or undefined if not found
    */
-  SessionManager.getTokenFromContext = function (ctx) {
+  this.getTokenFromContext = function (ctx) {
     const req = ctx && ctx.req;
 
     const token = getTokenFromRequest(req);
@@ -66,7 +65,7 @@ module.exports = function (ttl) { // time to live (in secs)
    * @param {String} username the user we're creating this token for
    * @param {Function} fn will return the newly created token
    */
-  SessionManager.create = function (username, fn) {
+  this.create = function (username, fn) {
     createTokenId(function (token) {
       if (token) {
         var tokenData = {
@@ -83,7 +82,7 @@ module.exports = function (ttl) { // time to live (in secs)
 
   };
 
-  SessionManager.isValid = function (token) {
+  this.isValid = function (token) {
     let result = false;
     const tokenData = tokens[token];
 
@@ -105,10 +104,10 @@ module.exports = function (ttl) { // time to live (in secs)
    * @param [String} token to search for
    * @return {Object} an object describing this token's characteristics or undefined
    */
-  SessionManager.toObject = function(token) {
+  this.toObject = function(token) {
     let tokenObj = undefined;
 
-    if (SessionManager.isValid(token)) {
+    if (this.isValid(token)) {
       const tokenData = tokens[token];
 
       tokenObj = {
@@ -127,11 +126,11 @@ module.exports = function (ttl) { // time to live (in secs)
    * @param [String} token to search for
    * @return {Object} data or undefined if token is expired/not found
    */
-  SessionManager.get = function (token) {
+  this.get = function (token) {
     const tokenData = tokens[token];
     let data = undefined;
 
-    if (SessionManager.isValid(token)) {
+    if (this.isValid(token)) {
       data = tokenData.data;
     }
 
@@ -145,7 +144,7 @@ module.exports = function (ttl) { // time to live (in secs)
    * @param [Object} data to store for this token
    * @return {Object} data or undefined if token is expired/not found
    */
-  SessionManager.put = function (token, data) {
+  this.put = function (token, data) {
 
     const tokenData = tokens[token];
 
@@ -162,9 +161,9 @@ module.exports = function (ttl) { // time to live (in secs)
    * remove this token from the token manager
    * @param [String} token to remove
    */
-  SessionManager.delete = function (token) {
+  this.delete = function (token) {
 
-    if (SessionManager.isValid(token)) {
+    if (this.isValid(token)) {
       // remove this token from our chain
       tokens[token] = undefined;
 
