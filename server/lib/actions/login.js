@@ -48,12 +48,12 @@ var Login = function (session) {
       formdata.add("DES_JSE", "1");
       formdata.add("__VIEWSTATEGENERATOR", parameters.viewStateGenerator);
       formdata.add("__SCROLLPOSITIONX", "0");
-      formdata.add("__SCROLLPOSITIONY", "247");
-      formdata.add("p$lt$middlebody$pageplaceholder$p$lt$zoneRight$CHOLogin$LoginControl$ctl00$Login1$UserName",
+      formdata.add("__SCROLLPOSITIONY", "0");
+      formdata.add("p$lt$ContentWidgets$pageplaceholder$p$lt$zoneContent$CHO_Widget_LoginFormWithFullscreenBackground_XLarge$loginCtrl$BaseLogin$UserName",
         username);
-      formdata.add("p$lt$middlebody$pageplaceholder$p$lt$zoneRight$CHOLogin$LoginControl$ctl00$Login1$Password",
+      formdata.add("p$lt$ContentWidgets$pageplaceholder$p$lt$zoneContent$CHO_Widget_LoginFormWithFullscreenBackground_XLarge$loginCtrl$BaseLogin$Password",
         password);
-      formdata.add("p$lt$middlebody$pageplaceholder$p$lt$zoneRight$CHOLogin$LoginControl$ctl00$Login1$LoginButton",
+      formdata.add("p$lt$ContentWidgets$pageplaceholder$p$lt$zoneContent$CHO_Widget_LoginFormWithFullscreenBackground_XLarge$loginCtrl$BaseLogin$LoginButton",
         "Login");
 
       console.log("form data: " + formdata.toString());
