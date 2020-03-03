@@ -20,6 +20,8 @@ var holdTeeTimePromise = function (session, slot, players, booking) {
         completeBooking.do(slot, players)
           .then(function (result) {
 
+            console.log("successfully completed booking");
+
             booking.complete = true;
             booking.data = result;
 
@@ -67,6 +69,7 @@ var reservePromise = function (session, slot, players, booking) {
           console.log("reservePromise: Promise.all returned for slot " + JSON.stringify(slot));
           resolve(booking);
         }, function (err) {
+          console.log("reservePromise: Promise.all failed with error " + err);
           reject(err);
         });
 
@@ -133,7 +136,7 @@ var TeeTimeReserve = function (session) {
               const teetime = {
                 time : result.data.time,
                 date : result.data.date,
-                course : result.data.teeSheetBank.teeSheetKey.course
+                course : result.data.course
               };
 
               resolve(teetime); 

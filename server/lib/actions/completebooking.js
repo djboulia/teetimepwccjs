@@ -58,11 +58,16 @@ var CompleteBooking = function (session) {
               json.errorMessage : "Error calling CommitBooking";
 
             reject(msg);
-          } else if (json.data && json.data.players) {
+          } else if (json.data && json.data.confirmationNumber) {
             // got the lock, return the result
+            console.log("CompleteBooking: success!");
             resolve(json.data);
           } else {
             // something went wrong, send back the message
+            console.log("CompleteBooking failed!");
+            console.log("json " + JSON.stringify(json) + 
+                        ", json.data " + JSON.stringify(json.data) + 
+                        ", json.data.confirmationNumber " + JSON.stringify(json.data.confirmationNumber));            
             reject(json.data.message);
           }
         }, function (err) {

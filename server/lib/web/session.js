@@ -24,7 +24,7 @@ var Session = function (site) {
     var rawcookies = response.headers['set-cookie'];
 
     for (var i in rawcookies) {
-      console.log("Raw cookie: " + rawcookies[i]);
+      // console.log("Raw cookie: " + rawcookies[i]);
 
       cookies.add(rawcookies[i], url);
     }
@@ -56,7 +56,7 @@ var Session = function (site) {
       }
     }
 
-    console.log("cookie value: " + result)
+    // console.log("cookie value: " + result)
     return result;
   };
 
@@ -69,7 +69,7 @@ var Session = function (site) {
 
       // set cookie state
       var cookieString = getCookies(url);
-      console.log("cookieString before: " + cookieString);
+      // console.log("cookieString before: " + cookieString);
 
       var options = {
         url: url,
@@ -80,13 +80,13 @@ var Session = function (site) {
       };
 
       request(options, (error, response, body) => {
-        console.log("headers " + JSON.stringify(response.headers));
+        // console.log("headers " + JSON.stringify(response.headers));
 
         if (!error) {
           setCookies(url, response);
 
           var cookieString = getCookies(url)
-          console.log("cookieString after: " + cookieString);
+          // console.log("cookieString after: " + cookieString);
 
           resolve(body);
         } else {
@@ -107,7 +107,7 @@ var Session = function (site) {
 
       // set cookie state
       var cookieString = getCookies(url);
-      console.log("cookieString before: " + cookieString);
+      // console.log("cookieString before: " + cookieString);
 
       var options = {
         url: url,
@@ -121,13 +121,13 @@ var Session = function (site) {
 
       request(options, (error, response, body) => {
         console.log("status code " + response.statusCode + " " + response.statusMessage);
-        console.log("headers " + JSON.stringify(response.headers));
+        // console.log("headers " + JSON.stringify(response.headers));
 
         if (!error) {
           setCookies(url, response);
 
           var cookieString = getCookies(url)
-          console.log("cookieString after: " + cookieString);
+          // console.log("cookieString after: " + cookieString);
 
           resolve(body);
         } else {
@@ -150,7 +150,7 @@ var Session = function (site) {
 
       // set cookie state
       var cookieString = getCookies(url);
-      console.log("cookieString before: " + cookieString);
+      // console.log("cookieString before: " + cookieString);
 
       var options = {
         url: url,
@@ -164,13 +164,13 @@ var Session = function (site) {
 
       request(options, (error, response, body) => {
         console.log("status code " + response.statusCode + " " + response.statusMessage);
-        console.log("headers " + JSON.stringify(response.headers));
+        // console.log("headers " + JSON.stringify(response.headers));
 
         if (!error) {
           setCookies(url, response);
 
           var cookieString = getCookies(url)
-          console.log("cookieString after: " + cookieString);
+          // console.log("cookieString after: " + cookieString);
 
           console.log(JSON.stringify(body));
 
