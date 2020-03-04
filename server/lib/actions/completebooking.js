@@ -61,7 +61,14 @@ var CompleteBooking = function (session) {
           } else if (json.data && json.data.confirmationNumber) {
             // got the lock, return the result
             console.log("CompleteBooking: success!");
-            resolve(json.data);
+
+            const teetime = {
+              time : json.data.time,
+              date : json.data.date,
+              course : json.data.course
+            };
+
+            resolve(teetime);
           } else {
             // something went wrong, send back the message
             console.log("CompleteBooking failed!");

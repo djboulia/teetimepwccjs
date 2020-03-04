@@ -3,7 +3,7 @@ var HoldTeeTime = require('./holdteetime.js');
 var MemberInfo = require('./memberinfo.js');
 var CompleteBooking = require('./completebooking.js');
 
-var holdTeeTimePromise = function (session, slot, players, booking) {
+var attemptBookingPromise = function (session, slot, players, booking) {
 
   return new Promise(function (resolve, reject) {
     console.log("reservePromise: attempting to book " + JSON.stringify(slot));
@@ -62,14 +62,14 @@ var reservePromise = function (session, slot, players, booking) {
 
     if (!booking.complete) {
 
-      const promise = holdTeeTimePromise(session, slot, players, booking);
+      const reservation = attemptBookingPromise(session, slot, players, booking);
 
-      Promise.all([promise])
+      reservation
         .then(function (result) {
-          console.log("reservePromise: Promise.all returned for slot " + JSON.stringify(slot));
+          console.log("reservePromise: returned for slot " + JSON.stringify(slot));
           resolve(booking);
         }, function (err) {
-          console.log("reservePromise: Promise.all failed with error " + err);
+          console.log("reservePromise: failed with error " + err);
           reject(err);
         });
 
@@ -82,64 +82,79 @@ var reservePromise = function (session, slot, players, booking) {
   });
 }
 
+var buildFoursome = function(member, otherPlayers) {
+    const foursome = [];
+
+    // member we're logged in as is always first of the foursome
+    foursome.push(member);
+
+    // add the rest of the players
+    for (var i=0; i<Math.min(otherPlayers.length,3); i++) {
+      foursome.push(otherPlayers[i]);
+    }
+
+    return foursome;
+}
+
+/**
+ * create a chain of promises to try all of the available
+ * tee times in order.  when we're successful, the remaining 
+ * promises will return immediately 
+ * 
+ * @param {*} session 
+ * @param {*} timeSlots 
+ * @param {*} foursome 
+ */
+var reserveTimeSlot = function(session, timeSlots, foursome) {
+
+  let chain = Promise.resolve();
+  let booking = {
+    complete: false
+  };
+
+  const slots = timeSlots.toArray();
+
+  for (var i = 0; i < slots.length; i++) {
+    const slot = slots[i];
+
+    if (slot.isEmpty()) {
+      chain = chain.then(function() {return reservePromise(session, slot, foursome, booking)});
+    }
+  }
+
+  return chain;
+}
+
 var TeeTimeReserve = function (session) {
 
   this.do = function (timeString, dateString, courses, otherPlayers) {
     console.log("TeeTimeReserve.do");
 
-    const foursome = [];
-
     return new Promise(function (resolve, reject) {
+
+      let foursome = [];
 
       const memberInfo = new MemberInfo(session);
       memberInfo.do()
-        .then(function (result) {
+        .then(function (member) {
 
-          const member = result;
           console.log("Found member data: " + JSON.stringify(member));
 
-          // member we're logged in as is always first of the foursome
-          foursome.push(member);
-
-          // add the rest of the players
-          for (var i=0; i<Math.min(otherPlayers.length,3); i++) {
-            foursome.push(otherPlayers[i]);
-          }
+          foursome = buildFoursome(member, otherPlayers);
 
           // look up available tee times
           const teeTimeSearch = new TeeTimeSearch(session);
           return teeTimeSearch.do(timeString, dateString, courses);
         })
-        .then(function (result) {
-          let chain = Promise.resolve();
-          let booking = {
-            complete: false
-          };
+        .then(function (timeSlots) {
 
-          // create a chain of promises to try all of the available
-          // tee times in order.  when we're successful, the remaining 
-          // promises will return immediately 
-          const slots = result.toArray();
+          const reservation = reserveTimeSlot(session, timeSlots, foursome);
 
-          for (var i = 0; i < slots.length; i++) {
-            const slot = slots[i];
-
-            if (slot.isEmpty()) {
-              chain = chain.then(function() {return reservePromise(session, slot, foursome, booking)});
-            }
-          }
-
-          chain = chain.then(function (result) {
+          reservation.then(function (result) {
             console.log("chain complete!: " + JSON.stringify(result));
 
             if (result && result.data && result.complete === true) {
-              const teetime = {
-                time : result.data.time,
-                date : result.data.date,
-                course : result.data.course
-              };
-
-              resolve(teetime); 
+              resolve(result.data); 
             } else {
               reject(result);
             }
