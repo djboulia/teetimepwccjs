@@ -28,18 +28,41 @@ var Session = function (site) {
 
       cookies.add(rawcookies[i], url);
     }
+
+    // var cookieString = getCookies(url)
+    // console.log("cookieString after: " + cookieString);
+
   };
 
-  var getUrl = function (protocol, path) {
+  var getUrl = function (path) {
     var delimiter = site.endsWith('/') ? "" : "/";
 
-    return protocol + "://" + site + delimiter + path;
+    return "https://" + site + delimiter + path;
+  };
+
+  var getPostJsonOptions = function(url, data) {
+ 
+    // set cookie state
+    var cookieString = getCookies(url);
+    // console.log("cookieString before: " + cookieString);
+
+    var options = {
+      url: url,
+      method: 'POST',
+      headers: {
+        'Cookie': cookieString
+      },
+      followRedirect: false,
+      json: data
+    };
+
+    return options;
   };
 
   this.getCookieValue = function (key) {
     // look up a stored cookie by its key value
 
-    var url = getUrl("https", "");
+    var url = getUrl("");
     var cookieList = cookies.getCookies(url);
 
     var result = null;
@@ -64,7 +87,7 @@ var Session = function (site) {
 
     return new Promise(function (resolve, reject) {
 
-      var url = getUrl("https", path);
+      var url = getUrl(path);
       console.log("GET url " + url);
 
       // set cookie state
@@ -85,9 +108,6 @@ var Session = function (site) {
         if (!error) {
           setCookies(url, response);
 
-          var cookieString = getCookies(url)
-          // console.log("cookieString after: " + cookieString);
-
           resolve(body);
         } else {
           console.log("Error!: " + error);
@@ -102,7 +122,7 @@ var Session = function (site) {
 
     return new Promise(function (resolve, reject) {
 
-      var url = getUrl("https", path);
+      var url = getUrl(path);
       console.log("POST url " + url);
 
       // set cookie state
@@ -126,9 +146,6 @@ var Session = function (site) {
         if (!error) {
           setCookies(url, response);
 
-          var cookieString = getCookies(url)
-          // console.log("cookieString after: " + cookieString);
-
           resolve(body);
         } else {
           console.log("Error!: " + error);
@@ -145,22 +162,10 @@ var Session = function (site) {
 
     return new Promise(function (resolve, reject) {
 
-      var url = getUrl("https", path);
+      var url = getUrl(path);  
+      var options = getPostJsonOptions(url, data);
+
       console.log("POST JSON url " + url);
-
-      // set cookie state
-      var cookieString = getCookies(url);
-      // console.log("cookieString before: " + cookieString);
-
-      var options = {
-        url: url,
-        method: 'POST',
-        headers: {
-          'Cookie': cookieString
-        },
-        followRedirect: false,
-        json: data
-      };
 
       request(options, (error, response, body) => {
         console.log("status code " + response.statusCode + " " + response.statusMessage);
@@ -168,9 +173,6 @@ var Session = function (site) {
 
         if (!error) {
           setCookies(url, response);
-
-          var cookieString = getCookies(url)
-          // console.log("cookieString after: " + cookieString);
 
           console.log(JSON.stringify(body));
 
