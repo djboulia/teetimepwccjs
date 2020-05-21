@@ -1,4 +1,4 @@
-var CompleteBooking = function (session) {
+var CompleteBooking = function (path, session) {
 
   var buildReservation = function (player) {
     return {
@@ -45,12 +45,11 @@ var CompleteBooking = function (session) {
 
     return new Promise(function (resolve, reject) {
 
-      let url = "api/v1/teetimes/CommitBooking/0";
-      console.log("complete booking url: " + url);
+      console.log("complete booking path: " + path);
 
       const data = buildRequest(players);
 
-      session.postJson(url, data)
+      session.postJson(path, data)
         .then(function (json) {
 
           if (!json || !json.data) {
@@ -59,7 +58,7 @@ var CompleteBooking = function (session) {
 
             reject(msg);
           } else if (json.data && json.data.confirmationNumber) {
-            // got the lock, return the result
+            // got the tee time, return the result
             console.log("CompleteBooking: success!");
 
             const teetime = {

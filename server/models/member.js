@@ -1,10 +1,7 @@
 'use strict';
 
 var Config = require('../lib/config.js');
-var Session = require('../lib/web/session.js');
-var Login = require('../lib/actions/login.js');
-var MemberInfo = require('../lib/actions/memberinfo.js');
-var MemberSearch = require('../lib/actions/membersearch.js');
+var TeeTimeSession = require('../lib/teetime/teetimesession.js');
 
 module.exports = function (Member) {
 
@@ -117,10 +114,9 @@ module.exports = function (Member) {
     console.log("member.login");
 
     sessionManager.create(username, function (token) {
-      var session = new Session(site);
-      var login = new Login(session);
+      var session = new TeeTimeSession(site);
 
-      login.do(username, password)
+      session.login(username, password)
         .then(function (result) {
 
           if (result) {
@@ -159,9 +155,8 @@ module.exports = function (Member) {
 
     if (sessionManager.isValid(tokenId)) {
       const session = sessionManager.get(tokenId);
-      const memberInfo = new MemberInfo(session);
 
-      memberInfo.do()
+      session.memberInfo()
         .then(function (result) {
           if (result) {
             cb(null, result);
@@ -182,9 +177,8 @@ module.exports = function (Member) {
 
     if (sessionManager.isValid(tokenId)) {
       const session = sessionManager.get(tokenId);
-      var memberSearch = new MemberSearch(session);
 
-      memberSearch.do(lastname)
+      session.memberSearch(lastname)
         .then(function (result) {
           if (result) {
             console.log("result: " + JSON.stringify(result));

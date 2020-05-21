@@ -1,10 +1,6 @@
 'use strict';
 
 var Config = require('../lib/config.js');
-var Session = require('../lib/web/session.js');
-var Login = require('../lib/actions/login.js');
-var TeeTimeSearch = require('../lib/actions/teetimesearch.js');
-var TeeTimeReserve = require('../lib/actions/teetimereserve.js');
 
 module.exports = function (TeeTime) {
 
@@ -111,9 +107,8 @@ module.exports = function (TeeTime) {
 
     if (sessionManager.isValid(tokenId)) {
       const session = sessionManager.get(tokenId);
-      const teeTimeSearch = new TeeTimeSearch(session);
 
-      teeTimeSearch.do(time, date, courses)
+      session.search(time, date, courses)
         .then(function (result) {
           if (result) {
             const slots = result.toArray();
@@ -138,9 +133,8 @@ module.exports = function (TeeTime) {
 
     if (sessionManager.isValid(tokenId)) {
       const session = sessionManager.get(tokenId);
-      const teeTimeReserve = new TeeTimeReserve(session);
 
-      teeTimeReserve.do(time, date, courses, players)
+      session.reserve(time, date, courses, players)
         .then(function (result) {
           if (result) {
             console.log("result: " + JSON.stringify(result));

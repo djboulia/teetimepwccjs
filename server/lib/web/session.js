@@ -187,6 +187,7 @@ var Session = function (site) {
 
     });
   };
+  
 };
 
 module.exports = Session;

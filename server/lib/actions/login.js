@@ -4,10 +4,10 @@ var FormData = require('../web/formdata');
 var Login = function (session) {
   // handle login sequence for tee time site
 
-  var getPage = function () {
+  this.getPage = function (path) {
 
     return new Promise(function (resolve, reject) {
-      session.get('login.aspx')
+      session.get(path)
         .then(function (body) {
 
           const $ = cheerio.load(body);
@@ -28,8 +28,8 @@ var Login = function (session) {
 
   };
 
-  var submitPage = function (parameters, username, password) {
-    console.log("login.post username: " + username + " password: " + password);
+  this.submitPage = function (path, parameters, username, password) {
+    console.log("login.post username: " + username);
 
     return new Promise(function (resolve, reject) {
 
@@ -71,26 +71,6 @@ var Login = function (session) {
         });
 
     });
-  };
-
-
-  this.do = function (username, password) {
-    console.log("login.do username: " + username + " password: " + password);
-
-    return new Promise(function (resolve, reject) {
-
-      getPage()
-        .then(function (parameters) {
-          return submitPage(parameters, username, password)
-        })
-        .then(function (result) {
-          resolve(result);
-        }, function (err) {
-          reject(err);
-        });
-
-    });
-
   };
 
 };
