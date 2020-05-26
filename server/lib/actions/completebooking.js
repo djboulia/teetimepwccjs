@@ -40,8 +40,8 @@ var CompleteBooking = function (path, session) {
     return obj;
   }
 
-  this.do = function (slot, players) {
-    console.log("CompleteBooking.do");
+  this.promise = function (slot, players) {
+    console.log("CompleteBooking.promise");
 
     return new Promise(function (resolve, reject) {
 

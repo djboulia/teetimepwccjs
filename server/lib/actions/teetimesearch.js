@@ -1,4 +1,5 @@
 var moment = require('moment-timezone');
+var TimeSlots = require('../teetime/timeslots');
 
 
 var validDate = function (dateString) {
@@ -39,9 +40,9 @@ var formatTime = function (timeString) {
   return timeParts[0] + ':' + timeParts[1];
 }
 
-var TeeTimeSearch = function (path) {
+var TeeTimeSearch = function (path, session) {
 
-  this.getPath = function (date) {
+  var getPath = function (date) {
     const month = date.getMonth() +1;
     const day = date.getDate();
 
@@ -54,7 +55,7 @@ var TeeTimeSearch = function (path) {
     return path;
   };
 
-  this.createTime = function (dateString, timeString) {
+  var createTime = function (dateString, timeString) {
     // construct a Date object from the date and tee time given
     // we expect time to be in the format hh:mm a, where a is AM or PM
     if (!validDate(dateString)) {
@@ -71,7 +72,7 @@ var TeeTimeSearch = function (path) {
     return teeTime;
   };
 
-  this.create24HourTime = function (dateString, time) {
+  var create24HourTime = function (dateString, time) {
     // construct a Date object from the date and tee time given
     // we expect time to be in 24 hour time of the format HH:SS:MM
     if (!validDate(dateString)) {
@@ -90,7 +91,7 @@ var TeeTimeSearch = function (path) {
     return teeTime;
   };
 
-  this.createPlayerData = function (players) {
+  var createPlayerData = function (players) {
     const results = [];
 
     for (var i = 0; i < players.length; i++) {
@@ -100,6 +101,58 @@ var TeeTimeSearch = function (path) {
     }
 
     return results;
+  };
+
+  this.promise = function(timeString, dateString, courses) {
+
+    console.log("search");
+
+    return new Promise(function (resolve, reject) {
+
+      const date = createTime(dateString, timeString);
+
+      if (date != null) {
+        const path = getPath(date);
+
+        session.get(path)
+          .then(function (body) {
+              // build a list of time slots from this data              
+              let slots = new TimeSlots();
+
+              const json = JSON.parse(body);
+              const teeSheet = json.data.teeSheet;
+
+              for (var i = 0; i < teeSheet.length; i++) {
+                const item = teeSheet[i];
+                const key = item.teeSheetBank.teeSheetKey;
+
+                const teeTime = create24HourTime(dateString, item.teeTime);
+                if (teeTime == null) {
+                  const err = "Could not create tee time from " + dateString + " " + item.teeTime;
+                  console.log(err);
+                  reject(err);
+                  return;
+                }
+                const players = createPlayerData(item.players);
+
+                if (!slots.add(teeTime, item.teeSheetTimeId, key.course, players)) {
+                  console.log("error adding time slot " + JSON.stringify(item));
+                }
+              }
+
+              slots = slots.filter(date, courses);
+
+              resolve(slots);
+            },
+            function (err) {
+              reject(err);
+            });
+      } else {
+        reject("Invalid date string.  Should be MM/DD/YYYY format.");
+      }
+
+    });
+
   };
 
 };

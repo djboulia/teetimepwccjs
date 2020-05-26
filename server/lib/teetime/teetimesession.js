@@ -5,21 +5,22 @@
 
 var Session = require('../web/session.js');
 var Login = require('../actions/login.js');
-var TimeSlots = require('./timeslots');
 var TeeTimeReserve = require('../actions/teetimereserve.js');
 var TeeTimeSearch = require('../actions/teetimesearch.js');
 var CompleteBooking = require('../actions/completebooking.js');
 var LockManager = require('../actions/lockmanager.js');
 
 
-const API_BASE = 'api/v1/teetimes';
-const API_LOGIN = 'login.aspx';
-const API_MEMBER_INFO = 'api/v1/roster/getcurrentMember';
-const API_MEMBER_SEARCH = 'api/v1/roster/GetList/244';
-const API_TEETIME_SEARCH = API_BASE + '/GetAvailableTeeTimes/';
-const API_TEETIME_LOCK = API_BASE + '/ProceedBooking';
-const API_TEETIME_UNLOCK = API_BASE + '/CancelBookingAttempt';
-const API_TEETIME_COMMIT = API_BASE + "/CommitBooking/0";
+const API_MEMBER_BASE = 'api/v1/roster';
+const API_MEMBER_LOGIN = 'login.aspx';
+const API_MEMBER_INFO = API_MEMBER_BASE + '/getcurrentMember';
+const API_MEMBER_SEARCH = API_MEMBER_BASE + '/GetList/244';
+
+const API_TEETIME_BASE = 'api/v1/teetimes';
+const API_TEETIME_SEARCH = API_TEETIME_BASE + '/GetAvailableTeeTimes/';
+const API_TEETIME_LOCK = API_TEETIME_BASE + '/ProceedBooking';
+const API_TEETIME_UNLOCK = API_TEETIME_BASE + '/CancelBookingAttempt';
+const API_TEETIME_COMMIT = API_TEETIME_BASE + "/CommitBooking/0";
 
 
 var TeeTimeSession = function (site) {
@@ -27,25 +28,10 @@ var TeeTimeSession = function (site) {
   const session = new Session(site);
 
   this.login = function (username, password) {
-    const login = new Login(session);
-    const path = API_LOGIN;
 
-    console.log("login username: " + username + " password: " + password);
+    const login = new Login(API_MEMBER_LOGIN, session);
 
-    return new Promise(function (resolve, reject) {
-
-      login.getPage(path)
-        .then(function (parameters) {
-          return login.submitPage(path, parameters, username, password)
-        })
-        .then(function (result) {
-          resolve(result);
-        }, function (err) {
-          reject(err);
-        });
-
-    });
-
+    return login.promise(username, password);
   };
 
   this.memberInfo = function () {
@@ -114,56 +100,9 @@ var TeeTimeSession = function (site) {
   };
 
   this.search = function (timeString, dateString, courses) {
+    const teeTimeSearch = new TeeTimeSearch(API_TEETIME_SEARCH, session);
 
-    console.log("search");
-
-    return new Promise(function (resolve, reject) {
-
-      const teeTimeSearch = new TeeTimeSearch(API_TEETIME_SEARCH);
-      const date = teeTimeSearch.createTime(dateString, timeString);
-
-      if (date != null) {
-        const path = teeTimeSearch.getPath(date);
-
-        session.get(path)
-          .then(function (body) {
-              // build a list of time slots from this data              
-              let slots = new TimeSlots();
-
-              const json = JSON.parse(body);
-              const teeSheet = json.data.teeSheet;
-
-              for (var i = 0; i < teeSheet.length; i++) {
-                const item = teeSheet[i];
-                const key = item.teeSheetBank.teeSheetKey;
-
-                const teeTime = teeTimeSearch.create24HourTime(dateString, item.teeTime);
-                if (teeTime == null) {
-                  const err = "Could not create tee time from " + dateString + " " + item.teeTime;
-                  console.log(err);
-                  reject(err);
-                  return;
-                }
-                const players = teeTimeSearch.createPlayerData(item.players);
-
-                if (!slots.add(teeTime, item.teeSheetTimeId, key.course, players)) {
-                  console.log("error adding time slot " + JSON.stringify(item));
-                }
-              }
-
-              slots = slots.filter(date, courses);
-
-              resolve(slots);
-            },
-            function (err) {
-              reject(err);
-            });
-      } else {
-        reject("Invalid date string.  Should be MM/DD/YYYY format.");
-      }
-
-    });
-
+    return teeTimeSearch.promise(timeString, dateString, courses);
   };
 
   this.reserve = function (timeString, dateString, courses, otherPlayers) {

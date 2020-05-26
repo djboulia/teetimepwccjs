@@ -79,8 +79,17 @@ var LockManager = function (lockPath, unlockPath, session) {
                 });
               }
             } else {
+              const err = json.data.message;
+
+              if (err === "The Tee Time you have selected is currently locked by another user.<br/>") {
+                console.log("reservePromise: lock attempt failed for " + JSON.stringify(slot));
+              } else {
+                // catch other errors and log them
+                console.log("reservePromise: error for " + JSON.stringify(slot));
+                console.log(err);
+              }
               // something went wrong, send back the message
-              reject(json.data.message);
+              reject(err);
             }
           },
           function (err) {

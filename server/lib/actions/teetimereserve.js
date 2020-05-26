@@ -30,7 +30,7 @@ var TeeTimeReserve = function (lockManager, completeBooking) {
   
           console.log("reservePromise: held time slot " + JSON.stringify(slot));
   
-          completeBooking.do(slot, players)
+          completeBooking.promise(slot, players)
             .then(function (result) {
   
               console.log("successfully completed booking");
@@ -49,19 +49,11 @@ var TeeTimeReserve = function (lockManager, completeBooking) {
             })
   
         }, function (err) {
-          if (err === "The Tee Time you have selected is currently locked by another user.<br/>") {
             // if we can't hold the time slot, it's likely because we're 
             // competing with someone else for locking it, or the tee
             // sheet isn't open yet.  We keep trying other possible time slots
             // until we get one that we can lock down
-            console.log("reservePromise: lock attempt failed for " + JSON.stringify(slot));
             resolve(booking);
-          } else {
-            // catch other errors and log them, but let future lock attempts happen
-            console.log("reservePromise: error for " + JSON.stringify(slot));
-            console.log(err);
-            resolve(booking);
-          }
         })
     })
   }

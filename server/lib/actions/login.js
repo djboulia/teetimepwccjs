@@ -1,10 +1,10 @@
 var cheerio = require('cheerio');
 var FormData = require('../web/formdata');
 
-var Login = function (session) {
+var Login = function (path, session) {
   // handle login sequence for tee time site
 
-  this.getPage = function (path) {
+  var getPage = function (path) {
 
     return new Promise(function (resolve, reject) {
       session.get(path)
@@ -28,7 +28,7 @@ var Login = function (session) {
 
   };
 
-  this.submitPage = function (path, parameters, username, password) {
+  var submitPage = function (path, parameters, username, password) {
     console.log("login.post username: " + username);
 
     return new Promise(function (resolve, reject) {
@@ -66,6 +66,24 @@ var Login = function (session) {
           var cookieVal = session.getCookieValue('.ASPXFORMSAUTH');
 
           resolve(cookieVal != null);
+        }, function (err) {
+          reject(err);
+        });
+
+    });
+  };
+
+  this.promise = function (username, password) {
+    console.log("login username: " + username);
+
+    return new Promise(function (resolve, reject) {
+
+      getPage(path)
+        .then(function (parameters) {
+          return submitPage(path, parameters, username, password)
+        })
+        .then(function (result) {
+          resolve(result);
         }, function (err) {
           reject(err);
         });
