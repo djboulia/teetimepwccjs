@@ -77,6 +77,7 @@ var CompleteBooking = function (path, session) {
             reject(json.data.message);
           }
         }, function (err) {
+          console.log("completeBooking error: " + err)
           reject(err);
         });
     });
