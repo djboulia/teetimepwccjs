@@ -24,18 +24,18 @@ var TeeTimeReserve = function (lockManager, completeBooking) {
   var attemptBookingPromise = function (slot, players, booking) {
 
     return new Promise(function (resolve, reject) {
-      console.log("reservePromise: attempting to book " + JSON.stringify(slot));
+      console.log("reservePromise: attempting to book " + slot.toString());
 
       lockManager.lock(slot)
         .then(function (result) {
 
-            console.log("reservePromise: held time slot " + JSON.stringify(slot));
+            console.log("reservePromise: held time slot " + slot.toString());
 
             if (!booking.isEmpty()) {
               // since we go after the tee times concurrently, another 
               // worker could have made a booking ahead of us.  If so,
               // we stop trying to book and just return
-              console.log("reserverPromise: tee time booked by another worker, releasing time slot " + JSON.stringify(slot))
+              console.log("reserverPromise: tee time booked by another worker, releasing time slot " + slot.toString())
               resolve(booking);
             } else {
               completeBooking.promise(slot, players)
@@ -91,7 +91,7 @@ var TeeTimeReserve = function (lockManager, completeBooking) {
 
         reservation
           .then(function (result) {
-            console.log("reservePromise: returned for slot " + JSON.stringify(slot));
+            console.log("reservePromise: returned for slot " + slot.toString());
             resolve(booking);
           }, function (err) {
             console.log("reservePromise: failed with error " + err);
@@ -100,7 +100,7 @@ var TeeTimeReserve = function (lockManager, completeBooking) {
 
       } else {
         // just resolve immediately, someone prior already booked a time
-        console.log("reservePromise: booking complete, not trying " + JSON.stringify(slot));
+        console.log("reservePromise: booking complete, not trying " + slot.toString());
         resolve(booking);
       }
 
@@ -145,7 +145,7 @@ var TeeTimeReserve = function (lockManager, completeBooking) {
           callback(err);
         });
 
-    }, 5); // # of concurrent workers
+    }, 6); // # of concurrent workers
 
 
     const slots = timeSlots.toArray();
@@ -158,9 +158,9 @@ var TeeTimeReserve = function (lockManager, completeBooking) {
 
         q.push(slot, function (err) {
           if (err) {
-            return console.log('error for slot ' + slot.date );
+            return console.log('error for slot ' + slot.toString());
           }
-          console.log('slot ' + slot.date + ' completed!');
+          console.log('slot ' +  slot.toString() + ' completed!');
         });
       }
     }

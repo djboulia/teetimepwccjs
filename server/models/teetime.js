@@ -101,6 +101,44 @@ module.exports = function (TeeTime) {
     }
   );
 
+  TeeTime.remoteMethod(
+    'reserveByTimeSlot', {
+      http: {
+        path: '/reserveByTimeSlot',
+        verb: 'post',
+      },
+
+      description: 'Try to book one of the time slots provided',
+
+      accepts: [{
+          arg: 'timeslots',
+          type: 'array',
+          required: true,
+          description: 'Time slots to reserve'
+        },
+        {
+          arg: 'players',
+          type: 'array',
+          required: true,
+          description: 'List of additional playing partners (max 3)'
+        },
+        {
+          arg: 'ctx',
+          type: 'string',
+          http: sessionManager.getTokenFromContext,
+          description: 'Do not supply this argument, it is automatically extracted ' +
+            'from request headers.',
+        }
+      ],
+
+      returns: {
+        arg: 'result',
+        type: 'object',
+        root: true
+      }
+    }
+  );
+
   TeeTime.search = function (time, date, courses, tokenId, cb) {
 
     console.log("teetime.search tokenId = " + tokenId);
@@ -135,6 +173,30 @@ module.exports = function (TeeTime) {
       const session = sessionManager.get(tokenId);
 
       session.reserve(time, date, courses, players)
+        .then(function (result) {
+          if (result) {
+            console.log("result: " + JSON.stringify(result));
+
+            cb(null, result);
+          } else {
+            cb(new Error("Reservation failed!"));
+          }
+        }, function (err) {
+          cb(new Error(err));
+        });
+    } else {
+      cb(new Error("Not logged in!"));
+    }
+  };
+
+  TeeTime.reserveByTimeSlot = function (timeslots, players, tokenId, cb) {
+
+    console.log("teetime.reserveByTimeSlot tokenId = " + tokenId);
+
+    if (sessionManager.isValid(tokenId)) {
+      const session = sessionManager.get(tokenId);
+
+      session.reserveByTimeSlot(timeslots, players)
         .then(function (result) {
           if (result) {
             console.log("result: " + JSON.stringify(result));

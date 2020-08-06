@@ -82,11 +82,11 @@ var LockManager = function (lockPath, unlockPath, session) {
               const err = json.data.message;
 
               if (err === "The Tee Time you have selected is currently locked by another user.<br/>") {
-                console.log("reservePromise: lock attempt failed for " + JSON.stringify(slot));
+                console.log("lockManager: lock attempt failed for " + slot.toString());
               } else {
                 // catch other errors and log them
-                console.log("reservePromise: error for " + JSON.stringify(slot));
-                console.log(err);
+                console.log("lockManager: error for " + slot.toString());
+                console.log(JSON.stringify(json));
               }
               // something went wrong, send back the message
               reject(err);

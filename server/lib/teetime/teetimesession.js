@@ -9,6 +9,7 @@ var TeeTimeReserve = require('../actions/teetimereserve.js');
 var TeeTimeSearch = require('../actions/teetimesearch.js');
 var CompleteBooking = require('../actions/completebooking.js');
 var LockManager = require('../actions/lockmanager.js');
+var TimeSlots = require('./timeslots');
 
 
 const API_MEMBER_BASE = 'api/v1/roster';
@@ -27,11 +28,42 @@ var TeeTimeSession = function (site) {
   // base session to handle web layer
   const session = new Session(site);
 
+  const memberData = {
+    username: null,
+    name: null,
+    id: null
+  };
+
   this.login = function (username, password) {
 
     const login = new Login(API_MEMBER_LOGIN, session);
+    const memberInfoPromise = this.memberInfo;
 
-    return login.promise(username, password);
+    return new Promise(function (resolve, reject) {
+      login.promise(username, password)
+        .then(function (result) {
+
+            // logged in successfully, now get and cache member info
+            // this avoids having to make additional calls later
+            memberInfoPromise()
+              .then(function (info) {
+                  memberData.username = username;
+                  memberData.name = info.name;
+                  memberData.id = info.id;
+
+                  console.log("Logged in with member data: " + JSON.stringify(memberData));
+
+                  resolve(result);
+                },
+                function (err) {
+                  reject(err);
+                });
+
+          },
+          function (err) {
+            reject(err);
+          });
+    });
   };
 
   this.memberInfo = function () {
@@ -145,6 +177,48 @@ var TeeTimeSession = function (site) {
           reject(err);
         });
 
+    });
+  };
+
+  this.reserveByTimeSlot = function (timeslots, otherPlayers) {
+    console.log("reserveByTimeSlot");
+
+    // two helper functions for reserving the tee time
+    const lockManager = new LockManager(API_TEETIME_LOCK, API_TEETIME_UNLOCK, session);
+    const completeBooking = new CompleteBooking(API_TEETIME_COMMIT, session);
+
+    return new Promise(function (resolve, reject) {
+
+      const slots = new TimeSlots();
+      const players = ["Available", "Available", "Available", "Available"];
+
+      for (let i=0; i<timeslots.length; i++) {
+        const slot = timeslots[i];
+
+        if (!slots.add(slot.date, slot.id, slot.course, players)) {
+          console.log("error adding time slot " + JSON.stringify(item));
+          reject(err);
+          return;
+        }
+      }
+
+      const teeTimeReserve = new TeeTimeReserve(lockManager, completeBooking);
+
+      const foursome = teeTimeReserve.buildFoursome(memberData, otherPlayers);
+
+      teeTimeReserve.reserveTimeSlot(slots, foursome)
+        .then(function (booking) {
+            console.log("reservation returned: " + JSON.stringify(booking));
+
+            if (booking && !booking.isEmpty()) {
+              resolve(booking.get());
+            } else {
+              reject(booking);
+            }
+          },
+          function (err) {
+            reject(err);
+          });
     });
   };
 
