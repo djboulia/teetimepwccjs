@@ -27,18 +27,18 @@ var TeeTimeReserve = function (lockManager, completeBooking) {
       console.log("reservePromise: attempting to book " + slot.toString());
 
       lockManager.lock(slot)
-        .then(function (result) {
+        .then(function (lockedSlot) {
 
-            console.log("reservePromise: held time slot " + slot.toString());
+            console.log("reservePromise: held time slot " + lockedSlot.toString());
 
             if (!booking.isEmpty()) {
               // since we go after the tee times concurrently, another 
               // worker could have made a booking ahead of us.  If so,
               // we stop trying to book and just return
-              console.log("reserverPromise: tee time booked by another worker, releasing time slot " + slot.toString())
+              console.log("reserverPromise: tee time booked by another worker, releasing time slot " + lockedSlot.toString())
               resolve(booking);
             } else {
-              completeBooking.promise(slot, players)
+              completeBooking.promise(lockedSlot, players)
                 .then(function (result) {
 
                   console.log("successfully completed booking");
