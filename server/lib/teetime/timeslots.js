@@ -57,7 +57,7 @@ var TimeSlots = function () {
     return -1;
   }
 
-  this.add = function (teeTime, id, course, players) {
+  this.add = function (teeTime, json, course, players) {
 
     const courseName = course.toLowerCase();
 
@@ -65,7 +65,7 @@ var TimeSlots = function () {
       return null;
     }
 
-    const slot = new TimeSlot(teeTime, id, course, players);
+    const slot = new TimeSlot(teeTime, json, course, players);
 
     slots.push(slot);
 
@@ -123,7 +123,7 @@ var TimeSlots = function () {
         // time is equal to or later than our request, now see if it's the right course
         if (isSelectedCourse(courses, slot.course)) {
           // also a valid course, so keep it
-          result.add(slot.date, slot.id, slot.course, slot.players);
+          result.add(slot.date, slot.json, slot.course, slot.players);
         }
       }
     }

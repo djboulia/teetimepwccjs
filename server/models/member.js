@@ -5,7 +5,8 @@ var TeeTimeSession = require('../lib/teetime/teetimesession.js');
 
 module.exports = function (Member) {
 
-  const site = Config.sitename;
+  const clubsitename = Config.clubsitename;
+  const teetimesitename = Config.teetimesitename;
   const sessionManager = Config.sessionManager;
 
   Member.remoteMethod(
@@ -114,7 +115,7 @@ module.exports = function (Member) {
     console.log("member.login");
 
     sessionManager.create(username, function (token) {
-      var session = new TeeTimeSession(site);
+      var session = new TeeTimeSession(clubsitename, teetimesitename);
 
       session.login(username, password)
         .then(function (result) {

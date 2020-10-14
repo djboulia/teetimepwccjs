@@ -1,4 +1,7 @@
 var async = require('async');
+var cheerio = require('cheerio');
+var Header = require('../web/header.js');
+var FormData = require('../web/formdata');
 
 var Booking = function () {
 
@@ -18,53 +21,205 @@ var Booking = function () {
 
 };
 
+var initiateReservation = function (path, session, slot) {
+  return new Promise(function (resolve, reject) {
+    // load up our form data.  Most of this comes 
+    // from the tee sheet
+    const json = slot.json;
+    const formdata = new FormData();
 
-var TeeTimeReserve = function (lockManager, completeBooking) {
+    formdata.add("lstate", json.lstate);
+    formdata.add("newreq", json.newreq);
+    formdata.add("displayOpt", json.displayOpt);
+    formdata.add("ttdata", json.ttdata);
+    formdata.add("date", json.date);
+    formdata.add("index", json.index);
+    formdata.add("course", json.course);
+    formdata.add("returnCourse", json.returnCourse);
+    formdata.add("jump", json.jump);
+    formdata.add("wasP1", json.wasP1);
+    formdata.add("wasP2", json.wasP2);
+    formdata.add("wasP3", json.wasP3);
+    formdata.add("wasP4", json.wasP4);
+    formdata.add("wasP5", json.wasP5);
+    formdata.add("p5", json.p5);
+    formdata.add("time:0", json['time:0']);
+    formdata.add("day", json.day);
+    formdata.add("contimes", json.contimes);
+
+    session.post(path, formdata.toObject())
+      .then(function (body) {
+
+        // pick out the values we need for the next step
+        const $ = cheerio.load(body);
+        const table = $('div .slot_container');
+        const data = table.data();
+        const result = (data) ? data.ftjson : undefined;
+
+        if (result && result.callback_map) {
+          const callback_map = result.callback_map;
+          console.log("initiateReservation: callback_map " + JSON.stringify(callback_map));
+
+          if (!callback_map['time:0']) {
+            console.log("initiateReservation: no tee time found in response, added " + json['time:0']);
+            callback_map['time:0'] = json.time;
+          } else {
+            console.log("initiateReservation: found tee time in response: " + callback_map['time:0']);
+          }
+          resolve(callback_map);
+        } else {
+          reject("invalid json: " + JSON.stringify(json));
+        }
+      }, function (err) {
+        reject(err);
+      });
+  });
+};
+
+/**
+ * initiateReservation will return the data for the callback method
+ * we hand those parameters back to the callback via a web form
+ */
+var callbackReservation = function (path, session, players, json) {
+  return new Promise(function (resolve, reject) {
+
+    // load up the form data from the json fields
+    const formdata = new FormData();
+
+    for (var key in json) {
+      if (json.hasOwnProperty(key)) {
+        formdata.add(key, json[key]);
+      }
+    }
+
+    session.post(path, formdata.toObject(), Header.XmlHttpRequest)
+      .then(function (body) {
+
+        // process the results and form into an object for
+        // the next call
+        const result = JSON.parse(body);
+
+        if (result && result.id_list && result.id_hash) {
+          const id_list = result.id_list;
+          const id_hash = result.id_hash;
+
+          console.log("id_list: " + JSON.stringify(id_list));
+          console.log("id_hash: " + JSON.stringify(id_hash));
+
+          const obj = {};
+
+          obj['teecurr_id1'] = id_list[0];
+          obj.id_hash = id_hash;
+          obj.hide = "0";
+          obj.notes = "";
+
+          for (let i = 1; i <= 5; i++) {
+            if (i > players.length) {
+              obj["player" + i] = "";
+              obj["user" + i] = "";
+              obj["p9" + i] = "0";
+              obj["p" + i + "cw"] = "";
+              obj["guest_id" + i] = "0";
+            } else {
+              const player = players[i - 1];
+
+              obj["player" + i] = player.name;
+              obj["user" + i] = player.username;
+              obj["p9" + i] = "0";
+              obj["p" + i + "cw"] = "PV";
+              obj["guest_id" + i] = "0";
+            }
+          }
+
+          obj.submitForm = "submit";
+          obj.slot_submit_action = "update";
+          obj.json_mode = "true";
+
+          console.log("returning obj : " + JSON.stringify(obj));
+
+          resolve(obj);
+        } else {
+          reject("callbackReservation: Invalid json");
+        }
+
+      }, function (err) {
+        reject(err);
+      });
+  })
+};
+
+var commitReservation = function (path, session, json) {
+  return new Promise(function (resolve, reject) {
+
+    // load up the form data from the json fields
+    const formdata = new FormData();
+
+    for (var key in json) {
+      if (json.hasOwnProperty(key)) {
+        formdata.add(key, json[key]);
+      }
+    }
+
+    session.post(path, formdata.toObject(), Header.XmlHttpRequest)
+      .then(function (body) {
+        console.log("result " + body);
+        const result = JSON.parse(body);
+        if (result && result.successful) {
+          resolve(result);
+        } else {
+          console.log("commitReservation: didn't get a positive confirmation");
+          reject(result);
+        }
+
+      }, function (err) {
+        reject(err);
+      });
+  })
+};
+
+
+var TeeTimeReserve = function (path, session) {
 
   var attemptBookingPromise = function (slot, players, booking) {
 
     return new Promise(function (resolve, reject) {
-      console.log("reservePromise: attempting to book " + slot.toString());
+      console.log("attemptBookingPromise: attempting to book " + slot.toString());
 
-      lockManager.lock(slot)
-        .then(function (lockedSlot) {
-
-            console.log("reservePromise: held time slot " + lockedSlot.toString());
-
+      initiateReservation(path, session, slot)
+        .then(function (result) {
             if (!booking.isEmpty()) {
               // since we go after the tee times concurrently, another 
               // worker could have made a booking ahead of us.  If so,
               // we stop trying to book and just return
-              console.log("reserverPromise: tee time booked by another worker, releasing time slot " + lockedSlot.toString())
+              console.log("attemptBookingPromise: tee time booked by another worker, releasing time slot " + slot.toString());
               resolve(booking);
             } else {
-              completeBooking.promise(lockedSlot, players)
+              const details = {
+                time: result['time:0'],
+                date: result['date'],
+                course: result['course']
+              };
+
+              callbackReservation(path, session, players, result)
                 .then(function (result) {
-
-                  console.log("successfully completed booking");
-
-                  booking.put(result);
-
-                  resolve(booking);
-
-                }, function (err) {
-                  // special case... if we get an error due to a time interval
-                  // but the booking is complete, then another worker likely
-                  // completed the booking before us.  just let this case pass.
-                  if (!booking.isEmpty() &&
-                    String(err).startsWith("A daily time interval restriction")) {
-
-                    console.log("reservePromise: another worker got the tee time, returning");
+                  if (!booking.isEmpty()) {
+                    // since we go after the tee times concurrently, another 
+                    // worker could have made a booking ahead of us.  If so,
+                    // we stop trying to book and just return
+                    console.log("attemptBookingPromise: tee time booked by another worker, releasing time slot " + slot.toString());
                     resolve(booking);
-
                   } else {
-                    // if we can't complete the booking, we likely have 
-                    // some error with the tee time.  possibilities such
-                    // as the person already booked a tee time within
-                    // 4 hours of this tee time, or an invalid member name
-                    // if this happens, we don't keep trying
-                    reject(err);
+                    commitReservation(path, session, result)
+                      .then(function (result) {
+                        booking.put(details);
+                        resolve(booking);
+                      }, function(err) {
+                        resolve(booking);
+                      });
                   }
+
+                }, function(err) {
+                  resolve(booking);
                 });
             }
 
@@ -107,20 +262,6 @@ var TeeTimeReserve = function (lockManager, completeBooking) {
     });
   }
 
-  this.buildFoursome = function (member, otherPlayers) {
-    const foursome = [];
-
-    // member we're logged in as is always first of the foursome
-    foursome.push(member);
-
-    // add the rest of the players
-    for (var i = 0; i < Math.min(otherPlayers.length, 3); i++) {
-      foursome.push(otherPlayers[i]);
-    }
-
-    return foursome;
-  };
-
   /**
    * create a queue of promises to try all of the available
    * tee times.  when we're successful, the remaining 
@@ -145,7 +286,7 @@ var TeeTimeReserve = function (lockManager, completeBooking) {
           callback(err);
         });
 
-    }, 6); // # of concurrent workers
+    }, 1); // # of concurrent workers
 
 
     const slots = timeSlots.toArray();
@@ -160,13 +301,13 @@ var TeeTimeReserve = function (lockManager, completeBooking) {
           if (err) {
             return console.log('error for slot ' + slot.toString());
           }
-          console.log('slot ' +  slot.toString() + ' completed!');
+          console.log('slot ' + slot.toString() + ' completed!');
         });
       }
     }
 
     const promise = new Promise(function (resolve, reject) {
-      q.drain( ()  => {
+      q.drain(() => {
         console.log("q.drain");
 
         if (!booking.isEmpty()) {

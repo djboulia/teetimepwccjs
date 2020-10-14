@@ -1,9 +1,9 @@
 var moment = require('moment-timezone');
 
-var TimeSlot = function (teetime, id, course, players) {
+var TimeSlot = function (teetime, json, course, players) {
 
   this.date = teetime;
-  this.id = id;
+  this.json = json;
   this.course = course;
   this.players = players.slice(0);
 
@@ -21,7 +21,7 @@ var TimeSlot = function (teetime, id, course, players) {
   }
 
   this.clone = function() {
-    return new TimeSlot(this.date, this.id, this.course, this.players);
+    return new TimeSlot(this.date, this.json, this.course, this.players);
   }
   
   this.toString = function() {
@@ -29,7 +29,7 @@ var TimeSlot = function (teetime, id, course, players) {
     const dtFormat= "YYYY-MM-DD hh:mm:ss a z";
     const dtString = moment(this.date).tz('America/New_York').format(dtFormat);
 
-    return '{ date: ' + dtString + ', id: ' + this.id + ', course: ' + this.course + '}';
+    return '{ date: ' + dtString + ', json: ' + JSON.stringify(this.json) + ', course: ' + this.course + '}';
   }
 };
 

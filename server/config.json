@@ -20,6 +20,7 @@
     "cors": false
   },
   "appconfig" : {
-    "sitename" : "prestonwood.com"
+    "clubsitename" : "prestonwood.com",
+    "teetimesitename" : "www1.foretees.com"
   }
 }

@@ -58,12 +58,13 @@ var Login = function (path, session) {
 
       console.log("form data: " + formdata.toString());
 
-      session.post('login.aspx', formdata.toObject())
+      session.post(path, formdata.toObject())
         .then(function (body) {
           // we don't get a lot of positive confirmation from
-          // the results of the post, but if a successful login occured, 
-          // we should now have a coookie called .ASPXFORMSAUTH in our session
-          var cookieVal = session.getCookieValue('.ASPXFORMSAUTH');
+          // the results of the post, but if a successful login occurred, 
+          // we should now have a cookie called .ASPXFORMSAUTH in our session
+          var cookieVal = session.getCookieValue('/', '.ASPXFORMSAUTH');
+          console.log("club login cookie: " + cookieVal);
 
           resolve(cookieVal != null);
         }, function (err) {

@@ -7,7 +7,8 @@ var Config = {
   // it is critical that the site name is precise, e.g. 
   // prestonwood.com, not www.prestonwood.com, which will 
   // fail in interesting ways
-  sitename: app.get('appconfig').sitename,
+  clubsitename: app.get('appconfig').clubsitename,
+  teetimesitename: app.get('appconfig').teetimesitename,
   
   sessionManager: new SessionManager(60 * 60) // 1 hour ttl
 };
