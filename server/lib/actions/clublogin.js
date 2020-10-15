@@ -17,7 +17,7 @@ var Login = function (path, session) {
           parameters.viewState = $('input[id="__VIEWSTATE"]').val();
           parameters.viewStateGenerator = $('input[id="__VIEWSTATEGENERATOR"]').val();
 
-          console.log("viewstate " + $('input[id="__VIEWSTATE"]').html());
+          // console.log("viewstate " + $('input[id="__VIEWSTATE"]').html());
 
           resolve(parameters);
         }, function (err) {
@@ -33,7 +33,7 @@ var Login = function (path, session) {
 
     return new Promise(function (resolve, reject) {
 
-      console.log("parameters: " + JSON.stringify(parameters));
+      // console.log("parameters: " + JSON.stringify(parameters));
 
       // load up our form data.  a bunch of these are fields from the
       // site login page that the server is expecting to see.  The 
@@ -56,7 +56,7 @@ var Login = function (path, session) {
       formdata.add("p$lt$ContentWidgets$pageplaceholder$p$lt$zoneContent$CHO_Widget_LoginFormWithFullscreenBackground_XLarge$loginCtrl$BaseLogin$LoginButton",
         "Login");
 
-      console.log("form data: " + formdata.toString());
+      // console.log("form data: " + formdata.toString());
 
       session.post(path, formdata.toObject())
         .then(function (body) {

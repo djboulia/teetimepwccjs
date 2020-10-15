@@ -28,19 +28,6 @@ var validDate = function (dateString) {
   return true;
 }
 
-var formatTime = function (timeString) {
-  // tee times come in as HH:MM:SS
-  // chop off the :SS
-  const timeParts = timeString.split(':');
-
-  if (timeParts.length != 3) {
-    console.log("formatTime: invalid time format!")
-    return null;
-  }
-
-  return timeParts[0] + ':' + timeParts[1];
-}
-
 var TeeTimeSearch = function (path, session) {
 
   var getPath = function (date) {
@@ -62,25 +49,6 @@ var TeeTimeSearch = function (path, session) {
     // to parse the time appropriately regardless of the timezone of the
     // environment we're running in
     const etzMoment = moment.tz(timeString + ' ' + dateString, "hh:mm a MM/DD/YYYY", 'America/New_York');
-
-    // console.log(etzMoment.clone().tz('America/New_York').format('hh:mm z'));
-    const teeTime = new Date(etzMoment.clone().format());
-    return teeTime;
-  };
-
-  var create24HourTime = function (dateString, time) {
-    // construct a Date object from the date and tee time given
-    // we expect time to be in 24 hour time of the format HH:SS:MM
-    if (!validDate(dateString)) {
-      return null;
-    }
-
-    const timeString = formatTime(time);
-
-    // all tee times come in as an Eastern time zone.  use moment-timezone
-    // to parse the time appropriately regardless of the timezone of the
-    // environment we're running in
-    const etzMoment = moment.tz(timeString + ' ' + dateString, "HH:mm MM/DD/YYYY", 'America/New_York');
 
     // console.log(etzMoment.clone().tz('America/New_York').format('hh:mm z'));
     const teeTime = new Date(etzMoment.clone().format());
@@ -196,7 +164,6 @@ var TeeTimeSearch = function (path, session) {
           // each table row represents a course tee time
           $('div .rwdTr').each(function (i, tr) {
 
-            let blocked = false;
             if ($(this).hasClass('hasRowColor')) {
               blocked = true;
             }
@@ -236,7 +203,7 @@ var TeeTimeSearch = function (path, session) {
 
           });
 
-          console.log("teetimes: " + JSON.stringify(teetimes));
+          // console.log("teetimes: " + JSON.stringify(teetimes));
 
           resolve(teetimes);
         }, function (err) {

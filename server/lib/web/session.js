@@ -11,7 +11,13 @@ const {
 //
 
 var request = require('request');
-require('request-debug')(request);
+
+// this is a great module for debugging what's actually going over the wire
+// but enabling it will generate a ton of log data, so disable it when
+// we're not debugging
+//
+// require('request-debug')(request);
+
 var CookieJar = require('request-cookies').CookieJar;
 
 var Session = function (site) {
@@ -134,7 +140,7 @@ var Session = function (site) {
 
     setCookieHeader(url, allHeaders);
 
-    console.log("allHeaders: " + JSON.stringify(allHeaders));
+    // console.log("allHeaders: " + JSON.stringify(allHeaders));
     return allHeaders;
   };
 
@@ -179,7 +185,7 @@ var Session = function (site) {
 
       request(options, (error, response, body) => {
         console.log("status code " + response.statusCode + " " + response.statusMessage);
-        console.log("headers " + JSON.stringify(response.headers));
+        // console.log("headers " + JSON.stringify(response.headers));
 
         setLastResponse(response);
 

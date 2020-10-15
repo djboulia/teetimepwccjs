@@ -60,6 +60,9 @@ var initiateReservation = function (path, session, slot) {
           const callback_map = result.callback_map;
           console.log("initiateReservation: callback_map " + JSON.stringify(callback_map));
 
+          const page_start_notifications = result.page_start_notifications;
+          console.log("initiateReservation: page_start_notifications: " + JSON.stringify(page_start_notifications));
+
           if (!callback_map['time:0']) {
             console.log("initiateReservation: no tee time found in response, added " + json['time:0']);
             callback_map['time:0'] = json.time;

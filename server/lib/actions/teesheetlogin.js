@@ -53,7 +53,7 @@ var TeeSheetLogin = function (path, session) {
 
     return new Promise(function (resolve, reject) {
 
-      console.log("parameters: " + JSON.stringify(parameters));
+      // console.log("parameters: " + JSON.stringify(parameters));
 
       // load up our form data.  a bunch of these are fields from the
       // site login page that the server is expecting to see.  The 
@@ -73,7 +73,7 @@ var TeeSheetLogin = function (path, session) {
       formdata.add("user_name", parameters.user_name);
       formdata.add("caller", parameters.caller);
 
-      console.log("form data: " + formdata.toString());
+      // console.log("form data: " + formdata.toString());
 
       // this is the SSO handoff from the club site to the tee sheet site
       session.postNoSSL(path, formdata.toObject())
@@ -93,13 +93,12 @@ var TeeSheetLogin = function (path, session) {
               const memberPath = selectMember(memberName, body);
 
               const newPath = buildRelativeUrl(memberPath, path);
-              console.log("Found path " + newPath.toString());
 
               session.get(newPath)
                 .then(function (body) {
                   const response = session.getLastResponse();
                   console.log("headers " + JSON.stringify(response.headers));
-                  console.log(body);
+                  // console.log(body);
 
                   const loginInfo = {
                     clubname: parameters.clubname,
@@ -126,7 +125,7 @@ var TeeSheetLogin = function (path, session) {
    * member to complete the login 
    */
   var selectMember = function (memberName, body) {
-    console.log("Member name: " + memberName);
+    console.log("Select Member name: " + memberName);
 
     let path = null;
 
@@ -139,7 +138,7 @@ var TeeSheetLogin = function (path, session) {
 
       if (altText === memberName) {
         path = $(this).attr('href');
-        console.log("found path: " + path);
+        console.log("Found member name at path: " + path);
       }
     });
 
