@@ -129,7 +129,8 @@ var callbackReservation = function (path, session, players, json) {
               obj["player" + i] = player.name;
               obj["user" + i] = player.username;
               obj["p9" + i] = "0";
-              obj["p" + i + "cw"] = "PV";
+              // [djb 3/19/2021] use CRT instead of PV for those with no private vehicle
+              obj["p" + i + "cw"] = "CRT";  
               obj["guest_id" + i] = "0";
             }
           }
