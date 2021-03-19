@@ -54,6 +54,14 @@ var TeeTimeSession = function (clubSite, teetimeSite) {
         .then(function (body) {
 
           var json = JSON.parse(body);
+          const fullName = json.fullName;
+          const memberId = json.memberId;
+
+          if (!fullName || !memberId) {
+            console.log('memberInfo returned: ' + JSON.stringify(json));
+            reject('invalid member info ' + json.message);
+            return;
+          }
 
           // holds the results of current member info
           var info = {

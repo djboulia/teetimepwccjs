@@ -66,7 +66,11 @@ var Login = function (path, session) {
           var cookieVal = session.getCookieValue('/', '.ASPXFORMSAUTH');
           console.log("club login cookie: " + cookieVal);
 
-          resolve(cookieVal != null);
+          if (cookieVal) {
+            resolve(cookieVal);
+          } else {
+            reject('Login failed, check username or password.');
+          }
         }, function (err) {
           reject(err);
         });
