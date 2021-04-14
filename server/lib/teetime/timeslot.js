@@ -1,5 +1,13 @@
 var moment = require('moment-timezone');
 
+/**
+ * Holds the time slot data from the tee sheet
+ * 
+ * @param {Date} teetime date object representing the tee time
+ * @param {Object} json a set of JSON values returned from the tee sheet
+ * @param {String} course the course for this time slot
+ * @param {Array} players the players in this time slot
+ */
 var TimeSlot = function (teetime, json, course, players) {
 
   this.date = teetime;
@@ -29,7 +37,7 @@ var TimeSlot = function (teetime, json, course, players) {
     const dtFormat= "YYYY-MM-DD hh:mm:ss a z";
     const dtString = moment(this.date).tz('America/New_York').format(dtFormat);
 
-    return '{ date: ' + dtString + ', json: ' + JSON.stringify(this.json) + ', course: ' + this.course + '}';
+    return '{ date: ' + dtString + ', course: ' + this.course + '}';
   }
 };
 

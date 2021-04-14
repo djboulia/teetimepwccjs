@@ -1,7 +1,8 @@
-var async = require('async');
 var cheerio = require('cheerio');
+var HoldQueue = require('../holdqueue.js');
 var Header = require('../web/header.js');
 var FormData = require('../web/formdata');
+const TimeSlot = require('../teetime/timeslot.js');
 
 var Booking = function () {
 
@@ -21,6 +22,13 @@ var Booking = function () {
 
 };
 
+/**
+ * this is where we attempt to hold the time slot.  there are a 
+ * few possible outcomes:
+ *  1. we get the lock 
+ *  2. we can't get the lock, but are given an alternative
+ *  3. we can't get the lock, probably due to someone else getting it
+ */
 var initiateReservation = function (path, session, slot) {
   return new Promise(function (resolve, reject) {
     // load up our form data.  Most of this comes 
@@ -66,10 +74,11 @@ var initiateReservation = function (path, session, slot) {
           if (!callback_map['time:0']) {
             console.log("initiateReservation: no tee time found in response, added " + json['time:0']);
             callback_map['time:0'] = json.time;
+            reject("initiateReservation: rejecting alternate tee time");
           } else {
             console.log("initiateReservation: found tee time in response: " + callback_map['time:0']);
+            resolve(callback_map);
           }
-          resolve(callback_map);
         } else {
           reject("invalid json: " + JSON.stringify(json));
         }
@@ -78,6 +87,33 @@ var initiateReservation = function (path, session, slot) {
       });
   });
 };
+
+/**
+ * attempt to lock the tee time. if we're successful, put it on a queue
+ * which will be processed later
+ * 
+ * @param {String} path 
+ * @param {Array} sessions 
+ * @param {Object} session 
+ * @param {TimeSlot} slot 
+ * @param {HoldQueue} holdQueue 
+ */
+var holdReservation = function (path, sessions, session, slot, holdQueue) {
+  initiateReservation(path, session, slot)
+    .then(function (result) {
+      // put this on our hold queue to be processed
+      holdQueue.add(session, result, slot)
+    },
+      function (err) {
+        // if we can't hold the time slot, it's likely because we're 
+        // competing with someone else for locking it, or the tee
+        // sheet isn't open yet.  
+        console.log('holdReservation: error holding time, return session to pool');
+
+        // put this session back in the worker pool
+        sessions.push(session);
+      })
+}
 
 /**
  * initiateReservation will return the data for the callback method
@@ -130,7 +166,7 @@ var callbackReservation = function (path, session, players, json) {
               obj["user" + i] = player.username;
               obj["p9" + i] = "0";
               // [djb 3/19/2021] use CRT instead of PV for those with no private vehicle
-              obj["p" + i + "cw"] = "CRT";  
+              obj["p" + i + "cw"] = "CRT";
               obj["guest_id" + i] = "0";
             }
           }
@@ -182,149 +218,124 @@ var commitReservation = function (path, session, json) {
 };
 
 
-var TeeTimeReserve = function (path, session) {
+var TeeTimeReserve = function (path, sessionPool) {
 
-  var attemptBookingPromise = function (slot, players, booking) {
-
-    return new Promise(function (resolve, reject) {
-      console.log("attemptBookingPromise: attempting to book " + slot.toString());
-
-      initiateReservation(path, session, slot)
-        .then(function (result) {
-            if (!booking.isEmpty()) {
-              // since we go after the tee times concurrently, another 
-              // worker could have made a booking ahead of us.  If so,
-              // we stop trying to book and just return
-              console.log("attemptBookingPromise: tee time booked by another worker, releasing time slot " + slot.toString());
-              resolve(booking);
-            } else {
-              const details = {
-                time: result['time:0'],
-                date: result['date'],
-                course: result['course']
-              };
-
-              callbackReservation(path, session, players, result)
-                .then(function (result) {
-                  if (!booking.isEmpty()) {
-                    // since we go after the tee times concurrently, another 
-                    // worker could have made a booking ahead of us.  If so,
-                    // we stop trying to book and just return
-                    console.log("attemptBookingPromise: tee time booked by another worker, releasing time slot " + slot.toString());
-                    resolve(booking);
-                  } else {
-                    commitReservation(path, session, result)
-                      .then(function (result) {
-                        booking.put(details);
-                        resolve(booking);
-                      }, function(err) {
-                        resolve(booking);
-                      });
-                  }
-
-                }, function(err) {
-                  resolve(booking);
-                });
-            }
-
-          },
-          function (err) {
-            // if we can't hold the time slot, it's likely because we're 
-            // competing with someone else for locking it, or the tee
-            // sheet isn't open yet.  We keep trying other possible time slots
-            // until we get one that we can lock down
-            resolve(booking);
-          })
-    })
-  }
-
-  var reservePromise = function (slot, players, booking) {
-    // create a promise for this reservation attempt
-    // we wait until the attempt completes before resolving the promise
-    return new Promise(function (resolve, reject) {
-      console.log("reservePromise: booking.isEmpty " + booking.isEmpty());
-
-      if (booking.isEmpty()) {
-
-        const reservation = attemptBookingPromise(slot, players, booking);
-
-        reservation
-          .then(function (result) {
-            console.log("reservePromise: returned for slot " + slot.toString());
-            resolve(booking);
-          }, function (err) {
-            console.log("reservePromise: failed with error " + err);
-            reject(err);
-          });
-
-      } else {
-        // just resolve immediately, someone prior already booked a time
-        console.log("reservePromise: booking complete, not trying " + slot.toString());
-        resolve(booking);
-      }
-
-    });
-  }
+  // after we successfully lock a tee time, it goes on the 
+  // hold queue for processing by the commit dispatcher
+  const holdQueue = new HoldQueue();
 
   /**
-   * create a queue of promises to try all of the available
-   * tee times.  when we're successful, the remaining 
-   * promises will return immediately 
+   * Use a set of worker sessions to try to hold as many
+   * available time slots as possible.  When we have times
+   * held, process them one by one until we book a time.
    * 
-   * @param {Object} timeSlots 
-   * @param {Array} foursome 
+   * @param {TimeSlots} timeSlots the range of tee times we will try
+   * @param {Array} foursome the players to book in this tee time
    */
   this.reserveTimeSlot = function (timeSlots, foursome) {
     console.log("reserveTimeSlot");
 
-    const booking = new Booking();
-    let errMsg = undefined;
+    return new Promise(function (resolve, reject) {
+      // the session pool holds the logged in instances we can 
+      // use as workers
+      const sessions = sessionPool.getTeeTimeSessions();
+      const numberOfWorkers = sessions.length;
 
-    const q = async.queue(function (slot, callback) {
+      // hold our booking results
+      const booking = new Booking();
 
-      reservePromise(slot, foursome, booking)
-        .then((booking) => {
-          callback();
-        }, (err) => {
-          errMsg = err;
-          callback(err);
-        });
+      const slots = timeSlots.toArray();
 
-    }, 1); // # of concurrent workers
+      console.log("slots:");
+      for (let i = 0; i < slots.length; i++) {
+        const slot = slots[i];
 
-
-    const slots = timeSlots.toArray();
-
-    for (var i = 0; i < slots.length; i++) {
-      const slot = slots[i];
-
-      if (slot.isEmpty()) {
-        console.log("adding slot " + i);
-
-        q.push(slot, function (err) {
-          if (err) {
-            return console.log('error for slot ' + slot.toString());
-          }
-          console.log('slot ' + slot.toString() + ' completed!');
-        });
+        console.log(slot.toString());
       }
-    }
 
-    const promise = new Promise(function (resolve, reject) {
-      q.drain(() => {
-        console.log("q.drain");
-
-        if (!booking.isEmpty()) {
-          resolve(booking);
-        } else {
-          reject(errMsg);
+      // this dispatches workers in parallel to hold time slots
+      // if a time slot is held, it's added to the holdqueue
+      const holdTimesDispatcher = setInterval(() => {
+        if (slots.length === 0) {
+          clearInterval(holdTimesDispatcher);
         }
-      });
+
+        // kick off available workers to hold times
+        // each held time added to the queue
+        while (sessions.length > 0 && slots.length > 0) {
+          const slot = slots.shift();
+          console.log('attempting to hold reservation ', slot);
+
+          if (slot.isEmpty()) {
+            const session = sessions.shift();
+
+            holdReservation(path, sessions, session, slot, holdQueue);
+          } else {
+            console.log('slot not empty, skipping');
+          }
+
+        }
+
+      }, 5);
+
+      // this checks the queue of held time slots and tries to book them
+      // one by one. if we were to just immediately book all of the held
+      // tee times, we would end up booking a bunch of times in a row
+      //
+      // if a hold fails, the worker is made available again
+      //
+      // if it succeeds, we book the time and end out attempts.
+      let commitInProgress = false;
+
+      const commitTimesDispatcher = setInterval(() => {
+        if (!commitInProgress && !holdQueue.isEmpty()) {
+          commitInProgress = true;
+
+          const nextItem = holdQueue.remove();
+          const session = nextItem.session;
+          const result = nextItem.json;
+
+          const details = {
+            time: result['time:0'],
+            date: result['date'],
+            course: result['course']
+          };
+
+          console.log('processing hold queue item ', details);
+
+          callbackReservation(path, session, foursome, result)
+            .then(function (result) {
+              commitReservation(path, session, result)
+                .then(function (result) {
+                  // success!
+                  clearInterval(holdTimesDispatcher);
+                  clearInterval(commitTimesDispatcher);
+
+                  booking.put(details);
+                  resolve(booking);
+                }, function (err) {
+                  // error, put this worker back on the queue
+                  sessions.push(session);
+                  commitInProgress = false;
+                });
+            }, function (err) {
+              // error, put this worker back on the queue
+              sessions.push(session);
+              commitInProgress = false;
+            });
+
+        }
+
+        // if all workers are idle, we have nothing left to process and nothing in the queue, call it a day
+        if (!commitInProgress && slots.length === 0 && holdQueue.isEmpty() && sessions.length === numberOfWorkers) {
+          clearInterval(commitTimesDispatcher);
+          console.log('CommitTimes ending: no tee times found.');
+          reject('No available tee times were found at the specified time.')
+        }
+
+      }, 1000);
     });
 
-    console.log("queue length " + q.length());
-
-    return (q.length() > 0) ? promise : Promise.resolve(booking);
   };
 
 };

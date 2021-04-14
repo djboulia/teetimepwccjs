@@ -4,7 +4,7 @@ var Config = require('../lib/config.js');
 
 module.exports = function (TeeTime) {
 
-  const sessionManager = Config.sessionManager;
+  const accessManager = Config.accessManager;
 
   TeeTime.remoteMethod(
     'search', {
@@ -36,7 +36,7 @@ module.exports = function (TeeTime) {
         {
           arg: 'ctx',
           type: 'string',
-          http: sessionManager.getTokenFromContext,
+          http: accessManager.getTokenFromContext,
           description: 'Do not supply this argument, it is automatically extracted ' +
             'from request headers.',
         }
@@ -87,7 +87,7 @@ module.exports = function (TeeTime) {
         {
           arg: 'ctx',
           type: 'string',
-          http: sessionManager.getTokenFromContext,
+          http: accessManager.getTokenFromContext,
           description: 'Do not supply this argument, it is automatically extracted ' +
             'from request headers.',
         }
@@ -125,7 +125,7 @@ module.exports = function (TeeTime) {
         {
           arg: 'ctx',
           type: 'string',
-          http: sessionManager.getTokenFromContext,
+          http: accessManager.getTokenFromContext,
           description: 'Do not supply this argument, it is automatically extracted ' +
             'from request headers.',
         }
@@ -143,8 +143,8 @@ module.exports = function (TeeTime) {
 
     console.log("teetime.search tokenId = " + tokenId);
 
-    if (sessionManager.isValid(tokenId)) {
-      const session = sessionManager.get(tokenId);
+    if (accessManager.isValid(tokenId)) {
+      const session = accessManager.get(tokenId);
 
       session.search(time, date, courses)
         .then(function (result) {
@@ -169,8 +169,8 @@ module.exports = function (TeeTime) {
 
     console.log("teetime.reserve tokenId = " + tokenId);
 
-    if (sessionManager.isValid(tokenId)) {
-      const session = sessionManager.get(tokenId);
+    if (accessManager.isValid(tokenId)) {
+      const session = accessManager.get(tokenId);
 
       session.reserve(time, date, courses, players)
         .then(function (result) {
@@ -193,8 +193,8 @@ module.exports = function (TeeTime) {
 
     console.log("teetime.reserveByTimeSlot tokenId = " + tokenId);
 
-    if (sessionManager.isValid(tokenId)) {
-      const session = sessionManager.get(tokenId);
+    if (accessManager.isValid(tokenId)) {
+      const session = accessManager.get(tokenId);
 
       session.reserveByTimeSlot(timeslots, players)
         .then(function (result) {

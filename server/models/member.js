@@ -7,7 +7,7 @@ module.exports = function (Member) {
 
   const clubsitename = Config.clubsitename;
   const teetimesitename = Config.teetimesitename;
-  const sessionManager = Config.sessionManager;
+  const accessManager = Config.accessManager;
 
   Member.remoteMethod(
     'login', {
@@ -45,7 +45,7 @@ module.exports = function (Member) {
       accepts: [{
         arg: 'ctx',
         type: 'string',
-        http: sessionManager.getTokenFromContext,
+        http: accessManager.getTokenFromContext,
         description: 'Do not supply this argument, it is automatically extracted ' +
           'from request headers.',
       }],
@@ -66,7 +66,7 @@ module.exports = function (Member) {
       accepts: [{
         arg: 'ctx',
         type: 'string',
-        http: sessionManager.getTokenFromContext,
+        http: accessManager.getTokenFromContext,
         description: 'Do not supply this argument, it is automatically extracted ' +
           'from request headers.',
       }],
@@ -96,7 +96,7 @@ module.exports = function (Member) {
         {
           arg: 'ctx',
           type: 'string',
-          http: sessionManager.getTokenFromContext,
+          http: accessManager.getTokenFromContext,
           description: 'Do not supply this argument, it is automatically extracted ' +
             'from request headers.',
         }
@@ -114,7 +114,7 @@ module.exports = function (Member) {
 
     console.log("member.login");
 
-    sessionManager.create(username, function (token) {
+    accessManager.create(username, function (token) {
       var session = new TeeTimeSession(clubsitename, teetimesitename);
 
       session.login(username, password)
@@ -123,10 +123,10 @@ module.exports = function (Member) {
           if (result) {
             // store this session and return the token
             // for future calls
-            sessionManager.put(token, session);
+            accessManager.put(token, session);
             // console.log("result: " + result);
 
-            cb(null, sessionManager.toObject(token));
+            cb(null, accessManager.toObject(token));
           } else {
             cb(new Error("Login failed!"));
           }
@@ -143,7 +143,7 @@ module.exports = function (Member) {
     console.log("member.logout: token = " + tokenId);
 
     // forgetting this token will effectively log us out 
-    if (tokenId && sessionManager.delete(tokenId)) {
+    if (tokenId && accessManager.delete(tokenId)) {
       cb(null, { result: true });
     } else {
       cb(new Error("Not logged in!"));
@@ -154,8 +154,8 @@ module.exports = function (Member) {
   Member.info = function (tokenId, cb) {
     console.log("member.info: token = " + tokenId);
 
-    if (sessionManager.isValid(tokenId)) {
-      const session = sessionManager.get(tokenId);
+    if (accessManager.isValid(tokenId)) {
+      const session = accessManager.get(tokenId);
 
       session.memberInfo()
         .then(function (result) {
@@ -176,8 +176,8 @@ module.exports = function (Member) {
   Member.search = function (lastname, tokenId, cb) {
     console.log("member.search: token = " + tokenId);
 
-    if (sessionManager.isValid(tokenId)) {
-      const session = sessionManager.get(tokenId);
+    if (accessManager.isValid(tokenId)) {
+      const session = accessManager.get(tokenId);
 
       session.memberSearch(lastname)
         .then(function (result) {

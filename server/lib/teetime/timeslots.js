@@ -1,5 +1,10 @@
 var TimeSlot = require('./timeslot.js');
 
+/**
+ * holds a list of TimeSlot objects and provides
+ * helper functions like filtering and sorting based on
+ * course preference
+ */
 var TimeSlots = function () {
   // manage a list of time slots
   const slots = [];

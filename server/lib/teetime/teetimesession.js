@@ -3,79 +3,15 @@
  * tee time system and booking tee times
  */
 
-var Header = require('../web/header.js');
-var Session = require('../web/session.js');
-var ClubLogin = require('../actions/clublogin.js');
-var TeeSheetLogin = require('../actions/teesheetlogin.js');
-var TeeTimeReserve = require('../actions/teetimereserve.js');
-var TeeTimeSearch = require('../actions/teetimesearch.js');
+var SSOSession = require('./ssosession.js');
 var TimeSlots = require('./timeslots');
-
-
-const API_CLUB_BASE = 'api/v1/roster';
-const API_CLUB_LOGIN = 'login.aspx';
-const API_CLUB_TEETIMES = 'ForeTeesSSO.aspx';
-const API_CLUB_MEMBER_INFO = API_CLUB_BASE + '/getcurrentMember';
-
-const API_TEETIME_BASE = "v5";
-const API_TEETIME_LOGIN = API_TEETIME_BASE + "/servlet/Login";
-const API_TEETIME_PWCC_BASE = API_TEETIME_BASE + "/prestonwoodccnc_golf_m56";
-const API_TEETIME_SEARCH = API_TEETIME_PWCC_BASE + '/Member_sheet';
-const API_TEETIME_MEMBER_SEARCH = API_TEETIME_PWCC_BASE + '/data_loader';
-const API_TEETIME_RESERVE = API_TEETIME_PWCC_BASE + '/Member_slot';
-
 
 var TeeTimeSession = function (clubSite, teetimeSite) {
   // Preston dumped their original software provider for tee time bookings, but kept 
   // them for running the main web site.  As a result, we now have to manage two sessions: 
   //  1) to handle login to the main country club website
   //  2) to handle the tee time booking site
-  const sessionPWCC = new Session(clubSite);
-
-  // the tee time site seems to trigger off the User-Agent being set to a valid browser
-  // type.  we set it to Firefox here.
-  const sessionTeeTime = new Session(teetimeSite);
-  sessionTeeTime.addHeader(Header.UserAgent.FIREFOX);
-
-  const memberData = {
-    username: null,
-    name: null,
-    id: null
-  };
-
-
-  var memberInfoPWCC = function () {
-    console.log("memberInfo");
-
-    return new Promise(function (resolve, reject) {
-      const path = API_CLUB_MEMBER_INFO;
-
-      sessionPWCC.get(path)
-        .then(function (body) {
-
-          var json = JSON.parse(body);
-          const fullName = json.fullName;
-          const memberId = json.memberId;
-
-          if (!fullName || !memberId) {
-            console.log('memberInfo returned: ' + JSON.stringify(json));
-            reject('invalid member info ' + json.message);
-            return;
-          }
-
-          // holds the results of current member info
-          var info = {
-            name: json.fullName.trim(),
-            id: json.memberId
-          };
-
-          resolve(info);
-        }, function (err) {
-          reject(err);
-        });
-    });
-
-  };
+  const session = new SSOSession(clubSite, teetimeSite);
 
   var buildFoursome = function (member, otherPlayers) {
     const foursome = [];
@@ -109,65 +45,19 @@ var TeeTimeSession = function (clubSite, teetimeSite) {
    * @param {String} password password for the PWCC site
    */
   this.login = function (username, password) {
-
-    const clubLogin = new ClubLogin(API_CLUB_LOGIN, sessionPWCC);
-    const teesheetLogin = new TeeSheetLogin(API_TEETIME_LOGIN, sessionTeeTime);
-
-    const memberInfoPromise = memberInfoPWCC;
-
-    return new Promise(function (resolve, reject) {
-      clubLogin.promise(username, password)
-        .then(function (result) {
-
-            // logged in successfully, now get and cache member info
-            // this avoids having to make additional calls later
-            memberInfoPromise()
-              .then(function (info) {
-                  memberData.username = username;
-                  memberData.name = info.name;
-                  memberData.id = info.id;
-
-                  console.log("Logged in to club site with member data: " + JSON.stringify(memberData));
-
-                  // now log in to the tee time site
-                  teesheetLogin.promise(API_CLUB_TEETIMES, sessionPWCC, memberData.name)
-                    .then(function (teeSheetInfo) {
-
-                      if (teeSheetInfo) {
-                        memberData.teeSheetInfo = teeSheetInfo;
-                        console.log("Logged in to tee time site with member data: " + JSON.stringify(memberData));
-                        resolve(result);
-                      } else {
-                        reject(err);
-                      }
-                    });
-                },
-                function (err) {
-                  reject(err);
-                });
-
-          },
-          function (err) {
-            reject(err);
-          });
-    });
+    return session.login(username, password);
   };
 
   this.memberInfo = function () {
-    console.log("memberInfo");
-
-    return new Promise(function (resolve, reject) {
-      resolve(memberData);
-    });
+    return session.memberInfo();
   };
 
   this.memberSearch = function (lastname) {
     console.log("MemberSearch.do");
 
     return new Promise(function (resolve, reject) {
-      const path = API_TEETIME_MEMBER_SEARCH + "?name_search=" + lastname + "&limit=100&arr=&_=" + Date.now();
 
-      sessionTeeTime.get(path)
+      session.memberSearch(lastname)
         .then(function (body) {
 
           var json = JSON.parse(body);
@@ -204,9 +94,7 @@ var TeeTimeSession = function (clubSite, teetimeSite) {
   };
 
   this.search = function (timeString, dateString, courses) {
-    const teeTimeSearch = new TeeTimeSearch(API_TEETIME_SEARCH, sessionTeeTime);
-
-    return teeTimeSearch.promise(timeString, dateString, courses);
+    return session.search(timeString, dateString, courses);
   };
 
   this.reserve = function (timeString, dateString, courses, otherPlayers) {
@@ -218,7 +106,6 @@ var TeeTimeSession = function (clubSite, teetimeSite) {
     return new Promise(function (resolve, reject) {
 
       let foursome = [];
-      const teeTimeReserve = new TeeTimeReserve(API_TEETIME_RESERVE, sessionTeeTime);
 
       memberInfoPromise
         .then(function (member) {
@@ -231,7 +118,7 @@ var TeeTimeSession = function (clubSite, teetimeSite) {
           return searchPromise;
         })
         .then(function (timeSlots) {
-          return teeTimeReserve.reserveTimeSlot(timeSlots, foursome);
+          return session.reserveTimeSlot(timeSlots, foursome);
         })
         .then(function (booking) {
           console.log("reservation returned: " + JSON.stringify(booking));
@@ -267,10 +154,9 @@ var TeeTimeSession = function (clubSite, teetimeSite) {
         }
       }
 
-      const teeTimeReserve = new TeeTimeReserve(API_TEETIME_RESERVE, sessionTeeTime);
       const foursome = buildFoursome(memberData, otherPlayers);
 
-      teeTimeReserve.reserveTimeSlot(slots, foursome)
+      session.reserveTimeSlot(slots, foursome)
         .then(function (booking) {
             console.log("reservation returned: " + JSON.stringify(booking));
 
