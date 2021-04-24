@@ -13,7 +13,7 @@ const API_TEETIME_MEMBER_SEARCH = API_TEETIME_PWCC_BASE + '/data_loader';
 const API_TEETIME_RESERVE = API_TEETIME_PWCC_BASE + '/Member_slot';
 
 var SSOSession = function (clubSite, teetimeSite) {
-    const sessionPool = new SessionPool(clubSite, teetimeSite, 10);
+    const sessionPool = new SessionPool(clubSite, teetimeSite, 8);
 
     /**
      * Login to the main web site, then handle subsequent login to the tee time booking
