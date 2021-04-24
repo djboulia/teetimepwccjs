@@ -146,7 +146,7 @@ var SessionPool = function (clubSite, teetimeSite, size) {
 
                 })
                 .catch((e) => {
-                    reject(err);
+                    reject(e);
                 })
         });
     };
