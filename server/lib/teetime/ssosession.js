@@ -5,15 +5,18 @@
 var SessionPool = require('./sessionpool.js');
 var TeeTimeReserve = require('../actions/teetimereserve.js');
 var TeeTimeSearch = require('../actions/teetimesearch.js');
+var TeeTimeCurrentTime = require('../actions/teetimecurrenttime.js');
 
 const API_TEETIME_BASE = "v5";
 const API_TEETIME_PWCC_BASE = API_TEETIME_BASE + "/prestonwoodccnc_golf_m56";
 const API_TEETIME_SEARCH = API_TEETIME_PWCC_BASE + '/Member_sheet';
+const API_TEETIME_CURRENT_TIME = API_TEETIME_PWCC_BASE + '/clock';
 const API_TEETIME_MEMBER_SEARCH = API_TEETIME_PWCC_BASE + '/data_loader';
 const API_TEETIME_RESERVE = API_TEETIME_PWCC_BASE + '/Member_slot';
 
 var SSOSession = function (clubSite, teetimeSite) {
-    const sessionPool = new SessionPool(clubSite, teetimeSite, 8);
+    const LOGIN_SESSIONS = 8;
+    const sessionPool = new SessionPool(clubSite, teetimeSite, LOGIN_SESSIONS);
 
     /**
      * Login to the main web site, then handle subsequent login to the tee time booking
@@ -43,6 +46,12 @@ var SSOSession = function (clubSite, teetimeSite) {
         const sessionTeeTime = sessionPool.getTeeTimeSession();
         const teeTimeSearch = new TeeTimeSearch(API_TEETIME_SEARCH, sessionTeeTime);
         return teeTimeSearch.promise(timeString, dateString, courses);
+    };
+
+    this.currentTime = function () {
+        const sessionTeeTime = sessionPool.getTeeTimeSession();
+        const teeTimeCurrentTime = new TeeTimeCurrentTime(API_TEETIME_CURRENT_TIME, sessionTeeTime);
+        return teeTimeCurrentTime.promise();
     };
 
     this.reserveTimeSlot = function (timeSlots, foursome) {

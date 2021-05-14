@@ -28,6 +28,10 @@ var TimeSlot = function (teetime, json, course, players) {
     return true;
   }
 
+  this.getCourse = function() {
+    return this.course;
+  }
+
   this.clone = function() {
     return new TimeSlot(this.date, this.json, this.course, this.players);
   }

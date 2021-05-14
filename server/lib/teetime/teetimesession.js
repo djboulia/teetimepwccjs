@@ -97,6 +97,11 @@ var TeeTimeSession = function (clubSite, teetimeSite) {
     return session.search(timeString, dateString, courses);
   };
 
+  this.currentTime = function () {
+    return session.currentTime();
+  };
+
+
   this.reserve = function (timeString, dateString, courses, otherPlayers) {
     console.log("reserve");
 
@@ -138,6 +143,8 @@ var TeeTimeSession = function (clubSite, teetimeSite) {
   this.reserveByTimeSlot = function (timeslots, otherPlayers) {
     console.log("reserveByTimeSlot");
 
+    const memberInfoPromise = this.memberInfo();
+
     // two helper functions for reserving the tee time
     return new Promise(function (resolve, reject) {
 
@@ -154,21 +161,27 @@ var TeeTimeSession = function (clubSite, teetimeSite) {
         }
       }
 
-      const foursome = buildFoursome(memberData, otherPlayers);
+      memberInfoPromise
+        .then((memberData) => {
+          const foursome = buildFoursome(memberData, otherPlayers);
 
-      session.reserveTimeSlot(slots, foursome)
-        .then(function (booking) {
-            console.log("reservation returned: " + JSON.stringify(booking));
+          session.reserveTimeSlot(slots, foursome)
+            .then(function (booking) {
+              console.log("reservation returned: " + JSON.stringify(booking));
 
-            if (booking && !booking.isEmpty()) {
-              resolve(booking.get());
-            } else {
-              reject(booking);
-            }
-          },
-          function (err) {
-            reject(err);
-          });
+              if (booking && !booking.isEmpty()) {
+                resolve(booking.get());
+              } else {
+                reject(booking);
+              }
+            },
+              function (err) {
+                reject(err);
+              });
+        })
+        .catch((err) => {
+          reject(err);
+        })
     });
   };
 

@@ -1,6 +1,32 @@
+
+var moment = require('moment-timezone');
 /**
  * implement a FIFO queue for managing held tee times
  */
+
+/**
+ * 
+ * @returns a Date string of the JSON held time and date
+ */
+var getJsonDateString = function (json) {
+    const timeString = json['time:0'];
+    const dateString = json['date'];
+
+    const etzMoment = moment.tz(timeString + ' ' + dateString, "hh:mm a YYYYMMDD", 'America/New_York');
+
+    // console.log(etzMoment.clone().tz('America/New_York').format('hh:mm a MM-DD-YYYY z'));
+    return etzMoment.clone().tz('America/New_York').format('hh:mm a MM-DD-YYYY z');
+}
+
+/**
+ * 
+ * @returns a Date object of the JSON held time and date
+ */
+ var getJsonDate = function (json) {
+    const teeTime = new Date(getJsonDateString(json));
+    return teeTime;
+}
+
 var HoldQueue = function () {
     const queue = [];
 
@@ -26,8 +52,8 @@ var HoldQueue = function () {
         // hold times could come in out of order, so we sort
         // such that closest time to our request is at the top of the queue
         queue.sort(function (a, b) {
-            const aTime = a.slot.date.getTime();
-            const bTime = b.slot.date.getTime();
+            const aTime = getJsonDate(a.json).getTime();
+            const bTime = getJsonDate(b.json).getTime();
 
             if (aTime > bTime) {
                 return 1;
@@ -42,14 +68,15 @@ var HoldQueue = function () {
         console.log('hold queue: ' + this.toString());
     };
 
-    this.toString = function() {
+    this.toString = function () {
         let result = 'length: ' + queue.length + '\n';
 
-        for (let i=0; i<queue.length; i++) {
+        for (let i = 0; i < queue.length; i++) {
             const item = queue[i];
             const slot = item.slot;
+            const json = item.json;
 
-            result += 'item ' + i + ': ' + slot.toString() + '\n';
+            result += 'item ' + i + ': date: ' + getJsonDateString(json) + ', course: ' + slot.getCourse() + '\n';
         }
 
         return result;

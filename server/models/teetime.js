@@ -50,6 +50,32 @@ module.exports = function (TeeTime) {
     }
   );
 
+  TeeTime.remoteMethod(
+    'currentTime', {
+      http: {
+        path: '/currentTime',
+        verb: 'get',
+      },
+
+      description: 'Get current tee time server time.',
+
+      accepts: [
+        {
+          arg: 'ctx',
+          type: 'string',
+          http: accessManager.getTokenFromContext,
+          description: 'Do not supply this argument, it is automatically extracted ' +
+            'from request headers.',
+        }
+      ],
+
+      returns: {
+        arg: 'result',
+        type: 'object',
+        root: true
+      }
+    }
+  );
 
   TeeTime.remoteMethod(
     'reserve', {
@@ -164,6 +190,33 @@ module.exports = function (TeeTime) {
     }
 
   };
+
+  TeeTime.currentTime = function (tokenId, cb) {
+
+    console.log("teetime.currentTime tokenId = " + tokenId);
+
+    if (accessManager.isValid(tokenId)) {
+      const session = accessManager.get(tokenId);
+
+      session.currentTime()
+        .then(function (result) {
+          if (result) {
+            console.log("result ms: " , result.ms);
+
+            cb(null, result);
+          } else {
+            cb(new Error("teetime.currentTime failed!"));
+          }
+        }, function (err) {
+          cb(new Error(err));
+        });
+
+    } else {
+      cb(new Error("Not logged in!"));
+    }
+
+  };
+
 
   TeeTime.reserve = function (time, date, courses, players, tokenId, cb) {
 

@@ -4,6 +4,8 @@
 // request.post will expect to see in the form attribute
 //
 
+var querystring = require('querystring');
+
 var FormData = function () {
   var data = {};
 
@@ -17,6 +19,10 @@ var FormData = function () {
 
   this.toObject = function () {
     return data;
+  }
+
+  this.toQueryString = function() {
+    return querystring.stringify(data);
   }
 
 };

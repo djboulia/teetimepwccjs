@@ -22,6 +22,19 @@ var Booking = function () {
 
 };
 
+var isAlternateNotification = function( notifications ) {
+  console.log('notifications ', notifications);
+
+  if (notifications && Array.isArray(notifications) && notifications.length > 0) {
+    const msg = notifications[0];
+    if (msg.includes('Would you like an alternate time?')) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 /**
  * this is where we attempt to hold the time slot.  there are a 
  * few possible outcomes:
@@ -217,6 +230,12 @@ var commitReservation = function (path, session, json) {
   })
 };
 
+var doCancel = function (path, session, players, json) {
+  callbackReservation(path, session, players, json)
+    .then(function (result) {
+      // cancelReservation(path, session, result);
+    });
+}
 
 var TeeTimeReserve = function (path, sessionPool) {
 
@@ -250,7 +269,7 @@ var TeeTimeReserve = function (path, sessionPool) {
       for (let i = 0; i < slots.length; i++) {
         const slot = slots[i];
 
-        console.log(slot.toString());
+        console.log('slot ' + i + ': ' + slot.toString());
       }
 
       // this dispatches workers in parallel to hold time slots
@@ -312,6 +331,16 @@ var TeeTimeReserve = function (path, sessionPool) {
                   clearInterval(commitTimesDispatcher);
 
                   booking.put(details);
+
+                  // release any held tee times we didn't use
+                  while (!holdQueue.isEmpty()) {
+                    const nextItem = holdQueue.remove();
+                    const session = nextItem.session;
+                    const result = nextItem.json;
+
+                    doCancel(path, session, foursome, result);
+                  }
+
                   resolve(booking);
                 }, function (err) {
                   // error, put this worker back on the queue
