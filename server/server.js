@@ -5,6 +5,8 @@ var boot = require('loopback-boot');
 
 var app = module.exports = loopback();
 
+console.log('dirname: ' + __dirname);
+
 app.start = function() {
   // start the web server
   return app.listen(function() {

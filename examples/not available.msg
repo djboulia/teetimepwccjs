@@ -1,0 +1,1 @@
+initiateReservation: page_start_notifications: ["Sorry, the tee time you requested is not available. Would you like an alternate time?","The next available tee time is: <b>11:30 AM on the Front tees of Fairways course<br>","Select \"[modalOptions.slotPageLoadNotification.continueButton]\" to use this alternate time."]

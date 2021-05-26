@@ -14,8 +14,10 @@ const API_TEETIME_CURRENT_TIME = API_TEETIME_PWCC_BASE + '/clock';
 const API_TEETIME_MEMBER_SEARCH = API_TEETIME_PWCC_BASE + '/data_loader';
 const API_TEETIME_RESERVE = API_TEETIME_PWCC_BASE + '/Member_slot';
 
+const CAPTCHA_IMG_PATH = './images';
+
 var SSOSession = function (clubSite, teetimeSite) {
-    const LOGIN_SESSIONS = 8;
+    const LOGIN_SESSIONS = 1;
     const sessionPool = new SessionPool(clubSite, teetimeSite, LOGIN_SESSIONS);
 
     /**
@@ -44,7 +46,7 @@ var SSOSession = function (clubSite, teetimeSite) {
 
     this.search = function (timeString, dateString, courses) {
         const sessionTeeTime = sessionPool.getTeeTimeSession();
-        const teeTimeSearch = new TeeTimeSearch(API_TEETIME_SEARCH, sessionTeeTime);
+        const teeTimeSearch = new TeeTimeSearch(API_TEETIME_SEARCH, sessionTeeTime, CAPTCHA_IMG_PATH);
         return teeTimeSearch.promise(timeString, dateString, courses);
     };
 

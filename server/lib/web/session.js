@@ -1,7 +1,3 @@
-const {
-  reject
-} = require('async');
-
 // 
 // hold Session level information as we interact with the given web site
 // this will preserve cookies as we navigate through

@@ -362,7 +362,7 @@ var TeeTimeReserve = function (path, sessionPool) {
           reject('No available tee times were found at the specified time.')
         }
 
-      }, 1000);
+      }, 20000);
     });
 
   };
