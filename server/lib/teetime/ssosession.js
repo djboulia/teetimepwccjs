@@ -17,7 +17,7 @@ const API_TEETIME_RESERVE = API_TEETIME_PWCC_BASE + '/Member_slot';
 const CAPTCHA_IMG_PATH = './images';
 
 var SSOSession = function (clubSite, teetimeSite) {
-    const LOGIN_SESSIONS = 1;
+    const LOGIN_SESSIONS = 2;
     const sessionPool = new SessionPool(clubSite, teetimeSite, LOGIN_SESSIONS);
 
     /**
