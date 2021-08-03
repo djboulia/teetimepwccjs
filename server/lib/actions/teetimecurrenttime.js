@@ -17,8 +17,15 @@ var TeeTimeCurrentTime = function (path, session) {
 
       session.get(getPath())
         .then((body) => {
-          const obj = JSON.parse(body);
-          resolve(body);
+          const clock = JSON.parse(body);
+
+          // adjust the clock to match the club time zone
+
+          const offset = clock.server_tz_offset - clock.club_tz_offset;
+          const adjust = offset * 1000 * 60 * 60;
+          clock.ms = clock.ms + adjust;
+          
+          resolve(clock.ms);
         })
         .catch((e) => {
           reject(e);

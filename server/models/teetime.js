@@ -194,6 +194,10 @@ module.exports = function (TeeTime) {
   TeeTime.currentTime = function (tokenId, cb) {
 
     console.log("teetime.currentTime tokenId = " + tokenId);
+    const preLocalTime = new Date();
+    console.log('pre-call local time ms: ' + preLocalTime.getTime());
+    console.log('pre-call local time: ' + preLocalTime.toString());
+
 
     if (accessManager.isValid(tokenId)) {
       const session = accessManager.get(tokenId);
@@ -201,9 +205,21 @@ module.exports = function (TeeTime) {
       session.currentTime()
         .then(function (result) {
           if (result) {
-            console.log("result ms: " , result.ms);
+            const localTime = new Date();
+            console.log('post call local time ms: ' + localTime.getTime());
+            console.log('post call local time: ' + localTime.toString());
 
-            cb(null, result);
+            console.log("server time ms: " , result);
+            const serverTime = new Date(result);
+            console.log("server time: " , serverTime.toString());
+
+            const timeDiff = result - localTime.getTime();
+            console.log('time difference ms: ' + timeDiff);
+
+            const duration = localTime.getTime() - preLocalTime.getTime();
+            console.log('call duration ms: ' + duration);
+
+            cb(null, { ms : result});
           } else {
             cb(new Error("teetime.currentTime failed!"));
           }
