@@ -15,6 +15,11 @@ const API_TEETIME_RESERVE = API_TEEITME_BASE + '/Member_slot';
 
 const CAPTCHA_IMG_PATH = './images';
 
+/**
+ * Encapsulate the ForeTees interactions in this one module.
+ * 
+ * @param {*} sitename 
+ */
 var FTSession = function (sitename) {
     const session = new Session(sitename);
     const PATH_WEBAPI = 'v5/prestonwoodccnc_flxrez0_m30/Common_webapi';
@@ -82,13 +87,22 @@ var FTSession = function (sitename) {
     };
 
     /**
+     * There are three steps in the tee time booking process
+     * 1. initiateReservation - POST method (HTML) which attempts to hold the tee time
+     * 2. callbackReservation - If the hold is successful, a second POST (JSON) 
+     *    callback is made to get the tee time info required to commit the booking
+     * 3. commitReservation - a POST (JSON) call to commit the booking -OR- 
+     *    cancelReservation - a GET (JSON) call to release the hold on the tee time
+     */
+    
+    /**
      * this is where we attempt to hold the time slot.  there are a 
      * few possible outcomes:
      *  1. we get the lock 
      *  2. we can't get the lock, but are given an alternative
      *  3. we can't get the lock, probably due to someone else getting it
      */
-    this.initiateReservation = function (json) {
+    this.holdReservation = function (json) {
         const path = API_TEETIME_RESERVE;
 
         return new Promise(function (resolve, reject) {
@@ -151,6 +165,8 @@ var FTSession = function (sitename) {
     /**
      * initiateReservation will return the data for booking a reservation
      * we hand those parameters back to the callback via a web form
+     * this internal function loads up the right data for the next step, 
+     * i.e. commit the reservation or canceling (releasing the hold) on the tee time
      */
     var callbackReservation = function (players, json) {
         const path = API_TEETIME_RESERVE;
@@ -221,6 +237,13 @@ var FTSession = function (sitename) {
         })
     };
 
+    /**
+     * complete the booking
+     * 
+     * @param {Object} players foursome of players in this booking
+     * @param {Object} json json data for this tee time
+     * @returns 
+     */
     this.commitReservation = function (players, json) {
         const path = API_TEETIME_RESERVE;
 
@@ -257,11 +280,21 @@ var FTSession = function (sitename) {
                             reject(err);
                         });
                 })
+                .catch((err) => {
+                    reject(err);
+                });
         });
 
     };
 
-    this.cancelReservation = function (players, json) {
+    /**
+     * release the hold on this booking
+     * 
+     * @param {Object} players foursome of players in this booking
+     * @param {Object} json json data for this tee time
+     * @returns 
+     */
+     this.releaseReservation = function (players, json) {
         return new Promise(function (resolve, reject) {
 
             callbackReservation(players, json)
@@ -300,7 +333,11 @@ var FTSession = function (sitename) {
                         }, function (err) {
                             reject(err);
                         });
+                })
+                .catch((err) => {
+                    reject(err);
                 });
+
         });
     }
 

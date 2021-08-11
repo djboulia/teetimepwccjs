@@ -21,19 +21,21 @@ const API_TEETIME_MAIN = "golf/tee-times-43.html";
 var SessionPool = function (clubSite, teetimeSite, size) {
     const sessions = [];
 
-    const memberData = {
-        username: null,
-        name: null,
-        id: null
-    };
-
-    this.getClubSession = function () {
-        const session = sessions[0];
-        return session.sessionClub;
-    };
+    /**
+     * 
+     * @returns first session in the session pool
+     */
+    var getSession = function() {
+        if (sessions.length > 0) {
+            return sessions[0];
+        } else {
+            console.log('error: no active session!');
+            return null;
+        }
+    }
 
     this.getFTSession = function () {
-        const session = sessions[0];
+        const session = getSession();
         return session.sessionFT;
     };
 
@@ -53,25 +55,30 @@ var SessionPool = function (clubSite, teetimeSite, size) {
         console.log("memberInfo");
 
         return new Promise(function (resolve, reject) {
-            resolve(memberData);
+            const session = getSession();
+            resolve(session.memberData);
         });
     };
 
     /**
-     * Login to the main web site, then handle subsequent login to the tee time booking
-     * site.
+     * Internal helper
      * 
-     * Added a delay parameter to space out multiple logins
+     * Login a single sesion to the main web site, then handle subsequent 
+     * login to the tee time booking site.
      * 
-     * @param {Object} sessionObj holds the session structure for logging in
+     * [djb 08/11/2021] Added a delay parameter to space out multiple logins, so 
+     *                  we don't overwhelm the backend server
+     * 
+     * @param {Object} sessionData holds the session structure for logging in
      * @param {String} username username for the PWCC site
      * @param {String} password password for the PWCC site
      * @param {Number} delay number of seconds to wait until login
      */
-    this.singleLogin = function (sessionObj, username, password, delay) {
+    var singleLogin = function (sessionData, username, password, delay) {
         console.log('singleLogin');
 
-        const sessionClub = sessionObj.sessionClub;
+        // main club site session
+        const sessionClub = new Session(clubSite);
 
         const teesheetLogin = new TeeSheetLogin(sessionClub);
         const teesheetMain = new TeeSheetMain(sessionClub);
@@ -87,6 +94,7 @@ var SessionPool = function (clubSite, teetimeSite, size) {
                     .then((teeSheetInfo) => {
 
                         if (teeSheetInfo) {
+                            const memberData = {};
                             memberData.username = teeSheetInfo.username;
                             memberData.name = teeSheetInfo.name;
                             console.log("Logged in to tee time site with member data: " + JSON.stringify(memberData));
@@ -97,11 +105,13 @@ var SessionPool = function (clubSite, teetimeSite, size) {
 
                                     memberData.id = ftKeys.ftUserID;
 
-                                    // login to the foretees site
+                                    // login to the foretees site via new session
                                     const sessionFT = new SessionFT(teetimeSite);
                                     sessionFT.login(ftKeys)
                                         .then((result) => {
-                                            sessionObj.sessionFT = sessionFT;
+                                            sessionData.sessionFT = sessionFT;
+                                            sessionData.sessionClub = sessionClub;
+                                            sessionData.memberData = memberData;
                                             resolve(memberData);
                                         })
                                         .catch((e) => {
@@ -134,22 +144,20 @@ var SessionPool = function (clubSite, teetimeSite, size) {
      * 
      * @param {String} username 
      * @param {String} password 
-     * @returns 
+     * @returns promise that 
      */
     this.login = function (username, password) {
-        const self = this;
 
         return new Promise(function (resolve, reject) {
             const promises = [];
             const pendingSessions = [];
 
             for (let i = 0; i < size; i++) {
-                const sessionClub = new Session(clubSite);
-                const sessionObj = { sessionClub: sessionClub, sessionFT: null };
+                const sessionData = { sessionClub: null, sessionFT: null };
 
-                pendingSessions.push(sessionObj);
+                pendingSessions.push(sessionData);
 
-                promises.push(self.singleLogin(sessionObj, username, password, i));
+                promises.push(singleLogin(sessionData, username, password, i));
             }
 
             Promise.allSettled(promises)

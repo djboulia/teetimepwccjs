@@ -31,7 +31,7 @@ var Booking = function () {
 var holdReservation = function (sessions, session, slot, holdQueue) {
   const json = slot.json;
 
-  session.initiateReservation(json)
+  session.holdReservation(json)
     .then(function (result) {
       // put this on our hold queue to be processed
       holdQueue.add(session, result, slot)
@@ -147,7 +147,7 @@ var TeeTimeReserve = function (sessionPool) {
                 const result = nextItem.json;
 
                 // fire and forget canceling this reservation
-                session.cancelReservation(foursome, result);
+                session.releaseReservation(foursome, result);
               }
 
               resolve(booking);
