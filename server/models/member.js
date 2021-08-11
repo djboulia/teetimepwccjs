@@ -179,6 +179,8 @@ module.exports = function (Member) {
     if (accessManager.isValid(tokenId)) {
       const session = accessManager.get(tokenId);
 
+      console.log('session found :', session);
+
       session.memberSearch(lastname)
         .then(function (result) {
           if (result) {

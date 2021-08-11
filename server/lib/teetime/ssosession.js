@@ -4,20 +4,9 @@
  */
 var SessionPool = require('./sessionpool.js');
 var TeeTimeReserve = require('../actions/teetimereserve.js');
-var TeeTimeSearch = require('../actions/teetimesearch.js');
-var TeeTimeCurrentTime = require('../actions/teetimecurrenttime.js');
-
-const API_TEETIME_BASE = "v5";
-const API_TEETIME_PWCC_BASE = API_TEETIME_BASE + "/prestonwoodccnc_golf_m56";
-const API_TEETIME_SEARCH = API_TEETIME_PWCC_BASE + '/Member_sheet';
-const API_TEETIME_CURRENT_TIME = API_TEETIME_PWCC_BASE + '/clock';
-const API_TEETIME_MEMBER_SEARCH = API_TEETIME_PWCC_BASE + '/data_loader';
-const API_TEETIME_RESERVE = API_TEETIME_PWCC_BASE + '/Member_slot';
-
-const CAPTCHA_IMG_PATH = './images';
 
 var SSOSession = function (clubSite, teetimeSite) {
-    const LOGIN_SESSIONS = 2;
+    const LOGIN_SESSIONS = 3;
     const sessionPool = new SessionPool(clubSite, teetimeSite, LOGIN_SESSIONS);
 
     /**
@@ -38,26 +27,22 @@ var SSOSession = function (clubSite, teetimeSite) {
     this.memberSearch = function (lastname) {
         console.log("MemberSearch.do");
 
-        const path = API_TEETIME_MEMBER_SEARCH + "?name_search=" + lastname + "&limit=100&arr=&_=" + Date.now();
-        const sessionTeeTime = sessionPool.getTeeTimeSession();
-
-        return sessionTeeTime.get(path);
+        const session = sessionPool.getFTSession();
+        return session.memberSearch(lastname);
     };
 
     this.search = function (timeString, dateString, courses) {
-        const sessionTeeTime = sessionPool.getTeeTimeSession();
-        const teeTimeSearch = new TeeTimeSearch(API_TEETIME_SEARCH, sessionTeeTime, CAPTCHA_IMG_PATH);
-        return teeTimeSearch.promise(timeString, dateString, courses);
+        const session = sessionPool.getFTSession();
+        return session.search(timeString, dateString, courses);
     };
 
     this.currentTime = function () {
-        const sessionTeeTime = sessionPool.getTeeTimeSession();
-        const teeTimeCurrentTime = new TeeTimeCurrentTime(API_TEETIME_CURRENT_TIME, sessionTeeTime);
-        return teeTimeCurrentTime.promise();
+        const session = sessionPool.getFTSession();
+        return session.currentTime();
     };
 
     this.reserveTimeSlot = function (timeSlots, foursome) {
-        const teeTimeReserve = new TeeTimeReserve(API_TEETIME_RESERVE, sessionPool);
+        const teeTimeReserve = new TeeTimeReserve(sessionPool);
         return teeTimeReserve.reserveTimeSlot(timeSlots, foursome);
     };
 

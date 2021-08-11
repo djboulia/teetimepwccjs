@@ -1,55 +1,41 @@
 var cheerio = require('cheerio');
 var FormData = require('../web/formdata');
 
-var TeeSheetLogin = function (path, session) {
+var TeeSheetLogin = function (session) {
 
   /**
-   * grab info from the club SSO page which we 
-   * then use to hand off to the tee time system site
+   * there seems to be no API to get a member's name, so we
+   * load the member sheet we get redirected to after login
+   * so we can extract it from the page.
+   * 
+   * @param {String} path location of the member sheet
+   * @returns promise and eventually the name of the member
    */
-  var getClubSSOPage = function (path, clubSession) {
+  var memberSheet = function (path) {
 
     return new Promise(function (resolve, reject) {
-      clubSession.get(path)
+
+      session.get(path)
         .then(function (body) {
 
+          let name = null;
           const $ = cheerio.load(body);
-          // console.log("body: " + body);
 
-          var parameters = {};
-          parameters.viewState = $('input[id="__VIEWSTATE"]').val();
-          parameters.viewStateGenerator = $('input[id="__VIEWSTATEGENERATOR"]').val();
-          parameters.clubname = $('input[id="clubname"]').val();
-          parameters.user_name = $('input[id="user_name"]').val();
-          parameters.caller = $('input[id="caller"]').val();
+          $('span.memName').each(function (i, elem) {
+            const temp = $(this).text();
+            console.log('name: ', temp);
+            name = temp;
+          });
 
-          resolve(parameters);
-        }, function (err) {
-          reject(err);
+          //  console.log('memberSheet ' + body);
+          resolve(name);
+
         });
 
     });
-
   };
 
-  /**
-   * The member URL is given relative to our current path
-   * (e.g. ../some/path/here), so handle translating it 
-   * back to a path we can use directly with our get method
-   */
-  var buildRelativeUrl = function (path, base) {
-    // URL object won't resolve a base that isn't absolute, so 
-    // use a dummy site to build a full URL.  we strip it 
-    // back to just the path before returning
-    const DUMMY_SITE = "http://example.org";
-    const baseUrl = new URL(base, DUMMY_SITE);
-    const newUrl = new URL(path, baseUrl.toString());
-
-    const newPath = newUrl.toString();
-    return newPath.substr(DUMMY_SITE.length); // return just path portion
-  };
-
-  var loginTeeSheet = function (memberName, path, parameters) {
+  var loginTeeSheet = function (path, username, password, parameters) {
 
     return new Promise(function (resolve, reject) {
 
@@ -59,103 +45,98 @@ var TeeSheetLogin = function (path, session) {
       // site login page that the server is expecting to see.  The 
       // relevant ones for us are the last three which hold the username/password
       var formdata = new FormData();
-
-      formdata.add("manScript_HiddenField", "");
-      formdata.add("__EVENTTARGET", "");
-      formdata.add("__EVENTARGUMENT", "");
-      formdata.add("__VIEWSTATE", parameters.viewState);
-      formdata.add("lng", "en-US");
-      formdata.add("__VIEWSTATEGENERATOR", parameters.viewStateGenerator);
-      formdata.add("__SCROLLPOSITIONX", "0");
-      formdata.add("__SCROLLPOSITIONY", "0");
-
-      formdata.add("clubname", parameters.clubname);
-      formdata.add("user_name", parameters.user_name);
-      formdata.add("caller", parameters.caller);
+      formdata.add("UserLOGIN", parameters.UserLOGIN);
+      formdata.add("UserPWD", parameters.UserPWD);
+      formdata.add("btnLogon", parameters.btnLogon);
+      formdata.add("Action", parameters.Action);
+      formdata.add("DocID", parameters.DocID);
+      formdata.add("LogonRequest", parameters.LogonRequest);
+      formdata.add("R", parameters.R);
 
       // console.log("form data: " + formdata.toString());
 
       // this is the SSO handoff from the club site to the tee sheet site
-      session.postNoSSL(path, formdata.toObject())
+      session.post(path, formdata.toObject())
         .then(function (body) {
 
-          // now go back to the site, this time via SSL which should
-          // establish our session with the tee time site
-          session.post(path, formdata.toObject())
-            .then(function (body) {
-              // we don't get a lot of positive confirmation from
-              // the results of the post, but if a successful login occurred, 
-              // we should now have a cookie called JSESSIONID in our session
-              const cookieVal = session.getCookieValue(path, 'JSESSIONID');
+          const response = session.getLastResponse();
+          if (response.statusCode == 302) {
+            const location = response.headers.location;
+            console.log('location ' + location);
 
-              console.log("Tee time system session id: " + cookieVal);
+            // we don't get a lot of positive confirmation from
+            // the results of the post, but if a successful login occurred, 
+            // we should now have a cookie called JSESSIONID in our session
+            const cookieVal = session.getCookieValue(path, 'FLEXID');
+            console.log("Tee time system session id: " + cookieVal);
 
-              const memberPath = selectMember(memberName, body);
+            const result = {
+              'username': session.getCookieValue(path, 'UserLOGIN'),
+              'uid': session.getCookieValue(path, 'UID'),
+              'flexid': session.getCookieValue(path, 'FLEXID')
+            }
 
-              const newPath = buildRelativeUrl(memberPath, path);
+            memberSheet(location)
+              .then((name) => {
+                result.name = name;
 
-              session.get(newPath)
-                .then(function (body) {
-                  const response = session.getLastResponse();
-                  console.log("headers " + JSON.stringify(response.headers));
-                  // console.log(body);
+                resolve(result);
+              })
+              .catch((e) => {
+                reject(e);
+              })
 
-                  const loginInfo = {
-                    clubname: parameters.clubname,
-                    user_name: parameters.user_name,
-                    caller: parameters.caller
-                  };
+          } else {
 
-                  resolve((cookieVal != null) ? loginInfo : null);
+            if (response.statusCode == 200 && body.includes('Invalid username or password')) {
+              console.log('invalid login credentials');
+              reject('invalid login credentials');
+            } else {
+              console.log("status code: " + response.statusCode);
+              // console.log(body);
+              reject('Expected redirect after login, statusCode=' + response.statusCode);
+            }
+          }
 
-                }, function (err) {
-                  reject(err);
-                });
-
-            });
-        }, function (err) {
-          reject(err);
         });
 
     });
   };
 
-  /**
-   * After login, we are presented with a page of members.  Select the right
-   * member to complete the login 
-   */
-  var selectMember = function (memberName, body) {
-    console.log("Select Member name: " + memberName);
+  var getLoginPage = function (path, username, password) {
+    return new Promise(function (resolve, reject) {
+      session.get(path)
+        .then(function (body) {
 
-    let path = null;
+          var parameters = {};
+          parameters.UserLOGIN = username;
+          parameters.UserPWD = password;
+          parameters.btnLogon = "Login";
+          parameters.Action = "Authenticate";
+          parameters.DocID = "7";
+          parameters.LogonRequest = "";
+          parameters.R = "0";
 
-    const $ = cheerio.load(body);
-    // console.log("body: " + body);
+          resolve(parameters);
+        }, function (err) {
+          reject(err);
+        });
 
-    $('a').each(function (i, elem) {
-      const altText = $(this).attr('alt');
-      console.log("alt text is: " + altText);
-
-      if (altText === memberName) {
-        path = $(this).attr('href');
-        console.log("Found member name at path: " + path);
-      }
     });
+  }
 
-    return (path);
-  };
-
-  this.promise = function (clubTeeSheetPage, clubSession, memberName) {
+  this.promise = function (path, username, password) {
 
     return new Promise(function (resolve, reject) {
 
-      getClubSSOPage(clubTeeSheetPage, clubSession)
+      getLoginPage(path, username, password)
         .then(function (parameters) {
-          return loginTeeSheet(memberName, path, parameters)
+          return loginTeeSheet(path, username, password, parameters)
         })
         .then(function (result) {
           resolve(result);
-        }, function (err) {
+        })
+        .catch((err) => {
           reject(err);
         });
 

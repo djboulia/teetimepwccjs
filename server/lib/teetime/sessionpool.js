@@ -2,18 +2,13 @@
  * Manage a pool of logged in session objects
  */
 
-var Header = require('../web/header.js');
 var Session = require('../web/session.js');
-var ClubLogin = require('../actions/clublogin.js');
+var SessionFT = require('./ftsession');
 var TeeSheetLogin = require('../actions/teesheetlogin.js');
+var TeeSheetMain = require('../actions/teesheetmain.js');
 
-const API_CLUB_BASE = 'api/v1/roster';
-const API_CLUB_LOGIN = 'login.aspx';
-const API_CLUB_TEETIMES = 'ForeTeesSSO.aspx';
-const API_CLUB_MEMBER_INFO = API_CLUB_BASE + '/getcurrentMember';
-
-const API_TEETIME_BASE = "v5";
-const API_TEETIME_LOGIN = API_TEETIME_BASE + "/servlet/Login";
+const API_TEETIME_LOGIN = "members-login";
+const API_TEETIME_MAIN = "golf/tee-times-43.html";
 
 /**
  * Create a pool of logged in instances and manage the login details for the
@@ -34,58 +29,25 @@ var SessionPool = function (clubSite, teetimeSite, size) {
 
     this.getClubSession = function () {
         const session = sessions[0];
-        return session.sessionPWCC;
+        return session.sessionClub;
     };
 
-    this.getTeeTimeSession = function () {
+    this.getFTSession = function () {
         const session = sessions[0];
-        return session.sessionTeeTime;
+        return session.sessionFT;
     };
 
-    this.getTeeTimeSessions = function () {
+    this.getFTSessions = function () {
 
         const teeTimeSessions = [];
 
         for (let i = 0; i < sessions.length; i++) {
             const session = sessions[i];
-            teeTimeSessions.push(session.sessionTeeTime);
+            teeTimeSessions.push(session.sessionFT);
         }
 
         return teeTimeSessions;
     }
-
-    var memberInfoPWCC = function (path, sessionPWCC) {
-        console.log("memberInfoPWCC");
-
-        return new Promise(function (resolve, reject) {
-            console.log('in memberInfoPWCC');
-
-            sessionPWCC.get(path)
-                .then(function (body) {
-
-                    var json = JSON.parse(body);
-                    const fullName = json.fullName;
-                    const memberId = json.memberId;
-
-                    if (!fullName || !memberId) {
-                        console.log('memberInfo returned: ' + JSON.stringify(json));
-                        reject('invalid member info ' + json.message);
-                        return;
-                    }
-
-                    // holds the results of current member info
-                    var info = {
-                        name: json.fullName.trim(),
-                        id: json.memberId
-                    };
-
-                    resolve(info);
-                }, function (err) {
-                    reject(err);
-                });
-        });
-
-    };
 
     this.memberInfo = function () {
         console.log("memberInfo");
@@ -99,55 +61,70 @@ var SessionPool = function (clubSite, teetimeSite, size) {
      * Login to the main web site, then handle subsequent login to the tee time booking
      * site.
      * 
+     * Added a delay parameter to space out multiple logins
+     * 
+     * @param {Object} sessionObj holds the session structure for logging in
      * @param {String} username username for the PWCC site
      * @param {String} password password for the PWCC site
+     * @param {Number} delay number of seconds to wait until login
      */
-    this.singleLogin = function (sessionPWCC, sessionTeeTime, username, password) {
+    this.singleLogin = function (sessionObj, username, password, delay) {
         console.log('singleLogin');
 
-        const clubLogin = new ClubLogin(API_CLUB_LOGIN, sessionPWCC);
-        const teesheetLogin = new TeeSheetLogin(API_TEETIME_LOGIN, sessionTeeTime);
+        const sessionClub = sessionObj.sessionClub;
 
-        const path = API_CLUB_MEMBER_INFO;
-        const memberInfoPromise = memberInfoPWCC;
+        const teesheetLogin = new TeeSheetLogin(sessionClub);
+        const teesheetMain = new TeeSheetMain(sessionClub);
 
         return new Promise(function (resolve, reject) {
-            clubLogin.promise(username, password)
-                .then(function (result) {
 
-                    console.log('clubLogin result ', result);
+            const loginFunc = function () {
+                // log in to the prestonwood site.  
+                // first we login with our credentials, then visit
+                // the main golf page which gives us keuys to login to the 
+                // foretees site.
+                teesheetLogin.promise(API_TEETIME_LOGIN, username, password)
+                    .then((teeSheetInfo) => {
 
-                    // logged in successfully, now get and cache member info
-                    // this avoids having to make additional calls later
-                    memberInfoPromise(path, sessionPWCC)
-                        .then(function (info) {
-                            memberData.username = username;
-                            memberData.name = info.name;
-                            memberData.id = info.id;
+                        if (teeSheetInfo) {
+                            memberData.username = teeSheetInfo.username;
+                            memberData.name = teeSheetInfo.name;
+                            console.log("Logged in to tee time site with member data: " + JSON.stringify(memberData));
 
-                            console.log("Logged in to club site with member data: " + JSON.stringify(memberData));
+                            teesheetMain.promise(API_TEETIME_MAIN)
+                                .then((ftKeys) => {
+                                    console.log("ftKeys: ", ftKeys);
 
-                            // now log in to the tee time site
-                            teesheetLogin.promise(API_CLUB_TEETIMES, sessionPWCC, memberData.name)
-                                .then(function (teeSheetInfo) {
+                                    memberData.id = ftKeys.ftUserID;
 
-                                    if (teeSheetInfo) {
-                                        memberData.teeSheetInfo = teeSheetInfo;
-                                        console.log("Logged in to tee time site with member data: " + JSON.stringify(memberData));
-                                        resolve(result);
-                                    } else {
-                                        reject(err);
-                                    }
-                                });
-                        },
-                            function (err) {
-                                reject(err);
-                            });
+                                    // login to the foretees site
+                                    const sessionFT = new SessionFT(teetimeSite);
+                                    sessionFT.login(ftKeys)
+                                        .then((result) => {
+                                            sessionObj.sessionFT = sessionFT;
+                                            resolve(memberData);
+                                        })
+                                        .catch((e) => {
+                                            console.log('foretees login failed ', e);
+                                            reject(e);
+                                        })
+                                })
+                                .catch((e) => {
+                                    console.log('error loading teesheetMain ', e);
+                                    reject(e);
+                                })
+                        } else {
+                            reject('Coulnt find teeSheetInfo');
+                        }
+                    })
+                    .catch((e) => {
+                        console.log('error loading teesheetLogin ', e);
+                        reject(e);
+                    });
+            }
 
-                })
-                .catch((e) => {
-                    reject(e);
-                })
+            // space out our logins so we don't overwhelm the back end server
+            setTimeout(loginFunc, delay * 1000);
         });
     };
 
@@ -167,26 +144,18 @@ var SessionPool = function (clubSite, teetimeSite, size) {
             const pendingSessions = [];
 
             for (let i = 0; i < size; i++) {
-                // Preston dumped their original software provider for tee time bookings, but kept 
-                // them for running the main web site.  As a result, we now have to manage two sessions: 
-                //  1) to handle login to the main country club website
-                //  2) to handle the tee time booking site
-                const sessionPWCC = new Session(clubSite);
+                const sessionClub = new Session(clubSite);
+                const sessionObj = { sessionClub: sessionClub, sessionFT: null };
 
-                // the tee time site seems to trigger off the User-Agent being set to a valid browser
-                // type.  we set it to Firefox here.
-                const sessionTeeTime = new Session(teetimeSite);
-                sessionTeeTime.addHeader(Header.UserAgent.FIREFOX);
+                pendingSessions.push(sessionObj);
 
-                pendingSessions.push({ sessionPWCC: sessionPWCC, sessionTeeTime: sessionTeeTime });
-
-                promises.push(self.singleLogin(sessionPWCC, sessionTeeTime, username, password));
+                promises.push(self.singleLogin(sessionObj, username, password, i));
             }
 
             Promise.allSettled(promises)
                 .then((results) => {
 
-                    for (let i=0; i<results.length; i++) {
+                    for (let i = 0; i < results.length; i++) {
                         const result = results[i];
                         if (result.status === 'fulfilled') {
                             sessions.push(pendingSessions[i]);
@@ -195,7 +164,7 @@ var SessionPool = function (clubSite, teetimeSite, size) {
                         }
                     }
 
-                    if (sessions.length >0) {
+                    if (sessions.length > 0) {
                         resolve(results[0].value);
                     } else {
                         reject('Login failed');

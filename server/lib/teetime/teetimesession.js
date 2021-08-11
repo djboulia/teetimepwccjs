@@ -19,7 +19,7 @@ var TeeTimeSession = function (clubSite, teetimeSite) {
     // member we're logged in as is always first of the foursome
     const memberObject = {
       name: member.name,
-      username: member.teeSheetInfo.user_name
+      username: member.username
     };
 
     foursome.push(memberObject);
