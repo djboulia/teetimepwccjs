@@ -95,6 +95,10 @@ var TeeTimeSearch = function (path, session, captchaImagePath) {
       } else {
         console.log('no captcha page found, proceeding with tee sheet search');
 
+        // if we found no captcha page, dump the instructions on the page
+        // to help us understand what happened.
+        console.log('instructions: ' + captcha.getInstructions());
+
         resolve(body);
       }
     });

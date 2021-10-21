@@ -37,6 +37,19 @@ var Captcha = function (body) {
         return result;
     }
 
+    /**
+     * get the instructions message on the page
+     */
+    this.getInstructions = function() {
+        const $ = cheerio.load(body);
+        // console.log("body: " + body);
+
+        // look for the header that says this is a captcha
+        const text = $('div .sub_instructions > p').text();
+
+        return text;        
+    }
+
 }
 
 
