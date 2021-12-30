@@ -32,6 +32,11 @@ var FTSession = function (sitename) {
     // type.  we set it to Firefox here.
     session.addHeader(Header.UserAgent.FIREFOX);
 
+    // use for testing only
+    this._getRawSession = function() {
+        return session;
+    }
+
     this.login = function (ftKeys) {
         return new Promise(function (resolve, reject) {
 

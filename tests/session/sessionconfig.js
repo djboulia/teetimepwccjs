@@ -2,7 +2,7 @@ var SessionPool = require('../../server/lib/teetime/sessionpool');
 
 var SessionConfig = function() {
 
-    const session = new SessionPool("prestonwood.com", "www1.foretees.com", 1);
+    const session = new SessionPool("www.prestonwood.com", "ftapp.prestonwood.com", 1);
 
     var args = process.argv.slice(2);
     if (args.length < 2) {

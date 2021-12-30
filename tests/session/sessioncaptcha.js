@@ -13,16 +13,17 @@ const PATH_IMAGES = '../../images';
 session.login(username, password)
     .then((result) => {
         console.log('result ', result);
-        const teesheet = session.getTeeTimeSession();
+        const ftSession = session.getFTSession();
+        const rawSession = ftSession._getRawSession();
 
-        const captchaImage = new CaptchaImage(URL, teesheet);
+        const captchaImage = new CaptchaImage(URL, rawSession);
 
         captchaImage.getCaptchaNumber(PATH_IMAGES)
             .then((result) => {
                 console.log('result: ' + result);
             })
             .catch((e) => {
-                console.log('session result', session.getLastResponse());
+                console.log('session result', rawSession.getLastResponse());
                 console.log('caught error:');
                 console.log(e);
             })
