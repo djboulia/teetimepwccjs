@@ -20,7 +20,7 @@
     "loopback": "^3.0.0",
     "loopback-boot": "^2.6.5",
     "loopback-component-explorer": "^5.0.0",
-    "moment-timezone": "^0.5.23",
+    "moment-timezone": "^0.5.35",
     "request": "^2.88.0",
     "request-cookies": "^1.1.0",
     "request-debug": "^0.2.0",
